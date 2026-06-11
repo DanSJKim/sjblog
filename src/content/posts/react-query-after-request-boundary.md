@@ -1,6 +1,6 @@
 ---
-title: "React Query 요청 이후의 경계 정리하기"
-description: "useQuery와 useMutation을 보다 보니 서버 데이터의 원형, 캐시 정합성, 화면 반응을 어떻게 나눌지 정리해보고 싶었습니다."
+title: "React Query 요청 이후에 남는 코드들"
+description: "select, invalidate, toast처럼 요청 이후에 따라오는 코드를 서버 상태의 규칙과 화면의 반응으로 나눠봤습니다."
 pubDate: 2026-06-11
 tags:
   - react-query
@@ -9,21 +9,19 @@ tags:
 commentsUrl: "https://github.com/DanSJKim/sjblog-comments/discussions/3"
 ---
 
-Query Factory로 `queryKey`와 `queryFn`을 컴포넌트 밖으로 꺼내고 나니, 남은 코드가 더 선명해졌다.
+Query Factory로 `queryKey`와 `queryFn`을 컴포넌트 밖으로 꺼냈다. 처음엔 그 정도면 꽤 나아진 줄 알았다.
 
-`select`, `invalidateQueries`, toast, modal close 같은 코드들이다.
+그런데 막상 코드를 보다 보니 다른 것들이 남았다. `select`, `invalidateQueries`, toast, modal close 같은 코드들이다.
 
-처음에는 query와 mutation을 따로 봤다. `select`는 query 쪽 문제이고, `onSuccess`는 mutation 쪽 문제처럼 보였다. 그런데 코드를 보다 보니 둘 다 같은 문제를 보고 있었다.
+겉으로는 서로 달라 보인다. `select`는 query 쪽 코드이고, toast나 modal close는 mutation의 `onSuccess` 주변에서 나온다. 그래도 한 번 더 들여다보면 질문은 비슷하다.
 
-서버 상태의 규칙인가, 아니면 지금 화면의 반응인가.
+이 코드는 서버 상태의 규칙에 가까운가, 아니면 지금 화면의 반응에 가까운가.
 
-지금은 대략 이렇게 보고 있다.
+나는 이 선을 대략 세 갈래로 보고 있다.
 
-- 서버 데이터의 원형과 요청 정의는 컴포넌트 밖에 둔다.
-- 캐시 정합성처럼 항상 필요한 일은 공통 경계에서 처리한다.
-- 화면마다 달라지는 데이터 가공과 UI 반응은 호출부 가까이에 남긴다.
+서버 데이터의 원형과 요청 정의는 컴포넌트 밖으로 꺼낸다. 캐시 정합성처럼 항상 필요한 일은 공통으로 처리한다. 반대로 화면마다 달라지는 데이터 가공과 UI 반응은 호출부 가까이에 남긴다.
 
-이 글은 그 흐름을 query와 mutation 양쪽에서 맞춰본 기록이다.
+아래는 그 선을 query와 mutation 양쪽에서 맞춰본 기록이다.
 
 ## select는 화면이 원하는 모양에 가깝다
 
@@ -42,7 +40,7 @@ export const userQueries = {
 }
 ```
 
-여기까지는 서버에서 어떤 데이터를 가져올지 정하는 코드다. 내가 헷갈렸던 건 `select`였다.
+여기까지는 서버에서 어떤 데이터를 가져올지 정하는 코드다. 애매했던 건 `select`였다.
 
 예를 들어 사용자 목록을 select box option으로 바꿔야 한다고 해보자.
 
@@ -74,10 +72,10 @@ options: (params: UserSearchParams) =>
 
 하지만 이렇게 두면 query definition이 화면의 모양까지 알게 된다. 이 변환을 여러 화면에서 공통으로 쓴다면 괜찮다. 반대로 특정 화면에서만 필요한 모양이라면 호출부에 남기는 편이 더 명확했다.
 
-그래서 query 쪽은 이렇게 정했다.
+그래서 query 쪽은 이렇게 생각한다.
 
-- 서버 데이터의 원형에 가까운 정의는 factory에 둔다.
-- 여러 화면이 공유하는 변환은 factory에 둘 수 있다.
+- 서버 데이터의 원형에 가까운 정의는 factory가 관리한다.
+- 여러 화면이 공유하는 변환은 factory로 올릴 수 있다.
 - 특정 화면만 필요한 가공은 호출부에 남긴다.
 
 여기서 봐야 할 건 “이 데이터가 서버 상태의 일부인가, 아니면 화면이 잠깐 원하는 모양인가”였다.
@@ -103,14 +101,14 @@ queryClient.setQueryData(
 
 그래서 query 이후의 캐시 처리는 factory가 만든 key를 쓰는 쪽이 낫다. 캐시를 어떻게 갱신할지는 호출부에서 결정하더라도, 어떤 key를 대상으로 할지는 factory에서 가져오는 편이 안전했다.
 
-query 쪽 처리는 두 갈래로 정리됐다.
+query 쪽에서는 두 갈래가 보였다.
 
 - 화면용 데이터 가공: 호출부에 가까울수록 좋다.
 - 캐시 대상 식별: factory의 key helper를 쓸수록 좋다.
 
 ## mutationOptions는 요청 정의만 남긴다
 
-mutation도 비슷한 고민이 있었다. 예전에는 커스텀 mutation 훅 안에 많은 것을 넣곤 했다.
+mutation도 비슷했다. 예전에는 커스텀 mutation 훅 안에 많은 것을 넣곤 했다.
 
 ```ts
 const useUpdateUserMutation = () => {
@@ -144,7 +142,7 @@ export const userMutations = {
 }
 ```
 
-`mutationOptions`에 대한 글은 `useMutation`이나 optimistic update 글에 비해 많지 않았다. 공식 문서도 짧은 편이다. 그래서 처음에는 이 helper가 어디까지 필요한지 애매했다.
+`mutationOptions`에 대한 글은 `useMutation`이나 optimistic update 글에 비해 많지 않았다. 공식 문서도 짧은 편이다. 그래서 처음에는 이 helper의 역할이 애매했다.
 
 써보면서 느낀 역할은 단순했다. `mutationOptions`는 mutation 훅을 대체하는 게 아니라, mutation의 요청 정의를 컴포넌트 밖으로 꺼내는 도구로 보는 게 맞았다.
 
@@ -245,7 +243,7 @@ query와 mutation을 같이 놓고 보니 결은 비슷했다.
 
 query에서는 같은 query definition을 여러 읽기 API에서 재사용하는 일이 중요했다. mutation에서는 요청 정의보다 그 이후의 경계를 나누는 일이 더 크게 느껴졌다.
 
-React Query 코드를 정리한다는 건 훅을 줄이는 문제만은 아니었다. 서버 상태의 원형, 캐시 정합성, 화면 반응을 어느 경계에서 끊어낼지 정하는 문제에 가까웠다.
+React Query 코드를 손본다는 건 훅을 줄이는 문제만은 아니었다. 서버 상태의 원형, 캐시 정합성, 화면 반응을 어느 경계에서 끊어낼지 정하는 문제에 가까웠다.
 
 ## 참고한 문서
 
