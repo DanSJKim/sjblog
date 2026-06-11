@@ -9,7 +9,7 @@ tags:
 commentsUrl: "https://github.com/DanSJKim/sjblog-comments/discussions/3"
 ---
 
-Query Factory를 정리한 뒤에는 후속 처리 쪽이 신경 쓰였다.
+Query Factory를 정리한 뒤에는 후속 처리를 어디에 둘지가 신경 쓰였다.
 
 `queryKey`와 `queryFn`을 한곳에 두는 건 알겠는데, 그 다음 처리는 어디에 두는 게 좋을까?
 
@@ -42,7 +42,7 @@ export const userQueries = {
 }
 ```
 
-여기까지는 서버에서 어떤 데이터를 가져올지에 가까운 정의다. 내가 헷갈렸던 건 `select`였다.
+여기까지는 서버에서 어떤 데이터를 가져올지 정하는 코드다. 내가 헷갈렸던 건 `select`였다.
 
 예를 들어 사용자 목록을 select box option으로 바꿔야 한다고 해보자.
 
@@ -82,7 +82,7 @@ options: (params: UserSearchParams) =>
 
 query 이후 처리에서 중요한 건 “이 데이터가 서버 상태의 일부인가, 아니면 화면이 잠깐 원하는 모양인가”였다.
 
-이 생각은 mutation을 볼 때도 이어졌다. 다만 query가 "가져온 데이터를 어떤 모양으로 볼 것인가"에 가깝다면, mutation은 "바꾼 뒤 무엇을 항상 맞춰야 하고, 무엇은 화면마다 달라지는가"에 더 가까웠다.
+이 생각은 mutation을 볼 때도 이어졌다. 다만 query가 "가져온 데이터를 어떤 모양으로 볼 것인가"를 묻는다면, mutation은 "바꾼 뒤 무엇을 항상 맞춰야 하고, 무엇은 화면마다 달라지는가"를 묻게 된다.
 
 ## query의 캐시 조작은 key 구조와 붙어 있어야 한다
 
@@ -101,7 +101,7 @@ queryClient.setQueryData(
 
 이런 코드는 key를 손으로 다시 만들기 시작하면 금방 불안해진다. `["users", "list"]`를 여기저기 적어두면 어느 순간 목록 key 구조를 바꿨을 때 같이 고쳐야 할 곳이 생긴다.
 
-그래서 query 이후의 캐시 처리는 factory가 만든 key를 쓰는 쪽이 낫다. 캐시를 어떻게 갱신할지는 호출부에서 결정하더라도, 어떤 key를 대상으로 할지는 factory를 통해 가져오는 편이 안전했다.
+그래서 query 이후의 캐시 처리는 factory가 만든 key를 쓰는 쪽이 낫다. 캐시를 어떻게 갱신할지는 호출부에서 결정하더라도, 어떤 key를 대상으로 할지는 factory에서 가져오는 편이 안전했다.
 
 query 쪽 처리는 결국 두 갈래로 나뉘었다.
 
@@ -146,7 +146,7 @@ export const userMutations = {
 
 `mutationOptions`에 대한 글은 `useMutation`이나 optimistic update 글에 비해 많지 않았다. 공식 문서도 짧은 편이다. 그래서 처음에는 이 helper가 어디까지 필요한지 애매했다.
 
-써보면서 느낀 역할은 단순했다. `mutationOptions`는 mutation 훅을 대체한다기보다 mutation의 요청 정의를 컴포넌트 밖으로 꺼내는 도구에 가깝다.
+써보면서 느낀 역할은 단순했다. `mutationOptions`는 mutation 훅을 대체하는 게 아니라, mutation의 요청 정의를 컴포넌트 밖으로 꺼내는 도구로 보는 게 맞았다.
 
 ## 항상 필요한 일과 화면마다 달라지는 일을 나눈다
 
@@ -165,9 +165,9 @@ const { mutate: updateUser, isPending } = useMutation({
 })
 ```
 
-여기서 invalidate는 UI 반응이라기보다 데이터 정합성에 가깝다. 이 mutation이 성공하면 사용자 목록 캐시는 다시 맞춰야 한다. 어떤 버튼에서 호출했는지와 상관없이 필요한 일이다.
+여기서 invalidate는 UI 반응이 아니라 데이터 정합성을 맞추는 일이다. 이 mutation이 성공하면 사용자 목록 캐시는 다시 맞춰야 한다. 어떤 버튼에서 호출했는지와 상관없이 필요한 일이다.
 
-반면 toast를 띄우거나 modal을 닫는 일은 특정 사용자 행동에 더 가깝다.
+반면 toast를 띄우거나 modal을 닫는 일은 특정 사용자 행동에 붙는다.
 
 ```tsx
 const handleSubmit = (values: UpdateUserVariables) => {
@@ -229,7 +229,7 @@ try {
 }
 ```
 
-`mutateAsync`를 쓰면 `try/catch`도 같이 따라온다. 흐름을 직접 제어해야 하는 상황이면 괜찮지만, 단순히 성공하면 toast를 띄우고 실패하면 에러를 보여주는 정도라면 `mutate` 쪽이 더 가볍다.
+`mutateAsync`를 쓰면 `try/catch`도 같이 따라온다. 흐름을 직접 제어해야 하는 상황이면 괜찮지만, 성공하면 toast를 띄우고 실패하면 에러를 보여주는 정도라면 `mutate` 쪽이 더 가볍다.
 
 ## 지금은 이렇게 정리했다
 
