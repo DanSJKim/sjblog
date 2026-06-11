@@ -1,0 +1,28 @@
+---
+type Props = {
+  commentsUrl?: string;
+};
+
+const { commentsUrl } = Astro.props;
+---
+
+{
+  commentsUrl && (
+    <section class="comments-panel mt-10" aria-labelledby="comments-title">
+      <div>
+        <h2 id="comments-title" class="text-xl font-semibold">Comments</h2>
+        <p class="page-copy mt-2 leading-7">
+          의견이나 질문은 GitHub Discussion에 남겨주세요. GitHub 계정으로 로그인하면 댓글을 작성할 수 있습니다.
+        </p>
+      </div>
+      <a
+        class="comments-link"
+        href={commentsUrl}
+        target="_blank"
+        rel="noreferrer"
+      >
+        GitHub에서 댓글 보기
+      </a>
+    </section>
+  )
+}

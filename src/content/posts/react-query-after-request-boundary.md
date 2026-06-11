@@ -6,6 +6,7 @@ tags:
   - react-query
   - frontend
   - architecture
+commentsUrl: "https://github.com/DanSJKim/sjblog-comments/discussions/3"
 ---
 
 Query Factory를 정리하다 보니 자연스럽게 다음 질문이 남았다.

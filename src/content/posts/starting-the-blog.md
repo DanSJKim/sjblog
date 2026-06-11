@@ -5,6 +5,7 @@ pubDate: 2026-06-11
 tags:
   - frontend
   - learning
+commentsUrl: "https://github.com/DanSJKim/sjblog-comments/discussions/1"
 ---
 
 블로그를 만들었다.

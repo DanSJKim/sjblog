@@ -6,6 +6,7 @@ tags:
   - react-query
   - frontend
   - architecture
+commentsUrl: "https://github.com/DanSJKim/sjblog-comments/discussions/2"
 ---
 
 React Query를 쓰다 보면 처음에는 커스텀 훅을 만들게 된다.
