@@ -26,7 +26,7 @@ const useUsersQuery = (params: UserSearchParams) => {
 
 처음에 신경 쓰였던 건 `queryFn`보다 `queryKey`였다. 훅 안에서 key를 만들다 보니 `invalidateQueries`나 `setQueryData`를 쓸 때 같은 key를 바깥에서 다시 만들어야 했다. 문자열을 손으로 맞추는 코드가 늘어나면, 결국 어느 한쪽이 어긋날 것 같았다.
 
-그래서 먼저 찾아본 건 Query Key Factory 패턴이었다. key를 한곳에서 만들고, 목록/상세/검색처럼 계층을 나누면 캐시 조작이 훨씬 안전해질 것 같았다.
+그래서 먼저 찾아본 건 Query Key Factory 패턴이었다. 나중에 다시 읽어보니 TkDodo의 "Effective React Query Keys" 글에서도 feature마다 query key factory를 두는 방식을 제안하고 있었다. key를 한곳에서 만들고, 목록/상세/검색처럼 계층을 나누면 캐시 조작이 훨씬 안전해질 것 같았다.
 
 ```ts
 const userKeys = {
@@ -38,6 +38,10 @@ const userKeys = {
 ```
 
 그런데 key만 밖으로 빼고 나니 다른 질문이 남았다. `queryKey`는 재사용할 수 있게 됐지만, 그 key로 어떤 데이터를 가져오는지까지는 여전히 훅 안에 숨어 있었다. `useQuery`에서는 쓸 수 있지만 `prefetchQuery`, `fetchQuery`, `getQueryData`, `setQueryData`, `invalidateQueries` 같은 API와 연결하려면 query definition을 다시 조립해야 했다.
+
+그러다 TkDodo의 "The Query Options API"를 다시 읽었다. 그는 예전에 제안했던 Query Key Factory를 돌아보면서, `queryKey`와 `queryFn`을 분리한 것이 실수였다고 쓴다. key는 queryFn의 의존성을 표현하는데, 정작 key는 factory에 있고 queryFn은 커스텀 훅 안에 떨어져 있으면 둘 사이의 관계가 코드에 잘 남지 않는다.
+
+그래서 이 글에서는 TkDodo가 Query Options API 글에서 보여준 형태를 따라, key helper와 `queryOptions`로 만든 query definition을 같은 객체 안에 두는 방식으로 정리했다.
 
 그때부터 질문이 바뀌었다.
 
@@ -78,7 +82,7 @@ const data = queryClient.getQueryData(userDetailQuery(1).queryKey)
 
 ## Query Factory로 묶기
 
-그래서 query를 커스텀 훅이 아니라 factory 객체로 묶는 쪽이 더 낫다고 판단했다.
+그래서 커스텀 훅 안에 query 정의를 숨기기보다, TkDodo가 제안한 Query Factory 형태로 key와 queryFn을 같이 묶는 쪽이 더 낫다고 판단했다.
 
 ```ts
 import { keepPreviousData, queryOptions, skipToken } from "@tanstack/react-query"
@@ -234,4 +238,5 @@ React Query를 더 잘 쓰는 문제라기보다, 서버 상태의 이름과 경
 - [TanStack Query v5 Query Options](https://tanstack.com/query/v5/docs/framework/react/guides/query-options)
 - [TanStack Query v5 Query Invalidation](https://tanstack.com/query/latest/docs/framework/react/guides/query-invalidation)
 - [TanStack Query v5 Disabling Queries](https://tanstack.com/query/v5/docs/framework/react/guides/disabling-queries)
+- [TkDodo: Effective React Query Keys](https://tkdodo.eu/blog/effective-react-query-keys)
 - [TkDodo: The Query Options API](https://tkdodo.eu/blog/the-query-options-api)
