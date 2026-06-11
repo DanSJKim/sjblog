@@ -1,0 +1,25 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PostList from "../components/PostList.astro";
+
+const posts = (await getCollection("posts")).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+---
+
+<BaseLayout
+  title="Daniel's Posts"
+  description="프론트엔드 개발 기록을 모아둔 블로그입니다."
+>
+  <section class="mb-14 pt-2 sm:pt-5">
+    <h1 class="page-title mb-5 text-4xl font-semibold leading-tight sm:text-5xl">
+      Daniel's Posts
+    </h1>
+    <p class="page-copy max-w-2xl text-lg leading-8">
+      프론트엔드 개발을 하며 배운 것과 고민한 것을 적어둡니다.
+    </p>
+  </section>
+
+  <PostList posts={posts} />
+</BaseLayout>

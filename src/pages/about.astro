@@ -1,0 +1,27 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="About"
+  description="프론트엔드 개발자 Daniel의 간단한 소개와 외부 링크입니다."
+>
+  <section class="max-w-2xl">
+    <h1 class="page-title mb-5 text-4xl font-semibold leading-tight sm:text-5xl">
+      About
+    </h1>
+    <p class="page-copy text-lg leading-8">
+      프론트엔드 개발자로 일하고 있습니다. 제품 개발 과정에서 마주치는
+      복잡성을 줄이고, 팀이 유지보수하기 쉬운 구조를 만드는 데 관심이
+      있습니다.
+    </p>
+
+    <h2 class="section-title mt-12 text-2xl font-semibold">Links</h2>
+    <ul class="mt-5 grid gap-3">
+      <li><a class="liquid-link" href="#" aria-label="Resume 링크">Resume</a></li>
+      <li><a class="liquid-link" href="#" aria-label="GitHub 링크">GitHub</a></li>
+      <li><a class="liquid-link" href="#" aria-label="LinkedIn 링크">LinkedIn</a></li>
+      <li><a class="liquid-link" href="mailto:hello@example.com">Email</a></li>
+    </ul>
+  </section>
+</BaseLayout>

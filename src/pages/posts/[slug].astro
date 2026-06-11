@@ -1,0 +1,53 @@
+---
+import { getCollection, render } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("posts");
+
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+  <article class="mx-auto max-w-2xl">
+    <header class="mb-12">
+      <p class="meta-text mb-3 text-sm">
+        <time datetime={post.data.pubDate.toISOString()}>
+          {
+            post.data.pubDate.toLocaleDateString("ko-KR", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          }
+        </time>
+      </p>
+      <h1 class="page-title mb-5 text-4xl font-semibold leading-tight sm:text-5xl">
+        {post.data.title}
+      </h1>
+      <p class="page-copy text-lg leading-8">{post.data.description}</p>
+      {
+        post.data.tags.length > 0 && (
+          <ul class="mt-6 flex flex-wrap gap-2" aria-label="태그">
+            {post.data.tags.map((tag) => (
+              <li class="liquid-chip">
+                {tag}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </header>
+
+    <div class="post-content liquid-reading-panel px-4 py-5 sm:px-8 sm:py-9">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>

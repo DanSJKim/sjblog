@@ -1,0 +1,31 @@
+---
+import type { CollectionEntry } from "astro:content";
+
+type Props = {
+  posts: CollectionEntry<"posts">[];
+};
+
+const { posts } = Astro.props;
+---
+
+<section class="grid gap-4" aria-label="글 목록">
+  {
+    posts.map((post) => (
+      <article class="liquid-card">
+        <a class="group relative z-10 block px-5 py-5 sm:px-7 sm:py-6" href={`/posts/${post.id}/`}>
+          <h2 class="post-card-title text-xl font-semibold leading-snug transition">
+            {post.data.title}
+          </h2>
+          <p class="page-copy mt-2 leading-7">{post.data.description}</p>
+          <time class="meta-text mt-4 block text-sm" datetime={post.data.pubDate.toISOString()}>
+            {post.data.pubDate.toLocaleDateString("ko-KR", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </time>
+        </a>
+      </article>
+    ))
+  }
+</section>

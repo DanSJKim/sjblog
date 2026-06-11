@@ -1,0 +1,132 @@
+---
+import { Moon, Sun } from "@lucide/astro";
+import "../styles/global.css";
+
+type Props = {
+  title: string;
+  description?: string;
+};
+
+const { title, description = "Daniel's Posts" } = Astro.props;
+const pageTitle = title === "Daniel's Posts" ? title : `${title} | Daniel's Posts`;
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <script is:inline>
+      (() => {
+        const storageKey = "daniel-posts-theme";
+        const root = document.documentElement;
+
+        const getStoredTheme = () => {
+          try {
+            return localStorage.getItem(storageKey);
+          } catch {
+            return null;
+          }
+        };
+
+        const getSystemTheme = () =>
+          window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+
+        const storedTheme = getStoredTheme();
+        const theme = storedTheme === "dark" || storedTheme === "light" ? storedTheme : getSystemTheme();
+
+        root.dataset.theme = theme;
+        root.style.colorScheme = theme;
+      })();
+    </script>
+    <title>{pageTitle}</title>
+  </head>
+  <body class="min-h-screen overflow-x-hidden antialiased">
+    <div class="site-atmosphere" aria-hidden="true"></div>
+
+    <header class="sticky top-3 z-40 mx-auto max-w-3xl px-3 text-sm">
+      <nav
+        class="glass-nav flex items-center justify-between gap-4 px-4 py-3.5"
+        aria-label="Primary navigation"
+      >
+        <a class="site-title font-semibold" href="/">Daniel's Posts</a>
+        <div class="flex items-center gap-1">
+          <a class="glass-link" href="/posts">Posts</a>
+          <a class="glass-link" href="/about">About</a>
+          <button
+            class="theme-toggle"
+            type="button"
+            aria-label="다크 테마로 전환"
+            aria-pressed="false"
+            data-theme-toggle
+          >
+            <Sun class="theme-toggle__icon theme-toggle__icon--sun" size={16} stroke-width={2} aria-hidden="true" />
+            <Moon class="theme-toggle__icon theme-toggle__icon--moon" size={16} stroke-width={2} aria-hidden="true" />
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <main class="mx-auto max-w-3xl px-5 pb-24 pt-14 sm:pt-16">
+      <slot />
+    </main>
+    <script>
+      const storageKey = "daniel-posts-theme";
+      const root = document.documentElement;
+      const toggle = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+      const systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+      const getStoredTheme = () => {
+        try {
+          return localStorage.getItem(storageKey);
+        } catch {
+          return null;
+        }
+      };
+
+      const setStoredTheme = (theme: string) => {
+        try {
+          localStorage.setItem(storageKey, theme);
+        } catch {
+          // The visual state can still update even if storage is unavailable.
+        }
+      };
+
+      const resolveTheme = () => {
+        const storedTheme = getStoredTheme();
+        if (storedTheme === "dark" || storedTheme === "light") return storedTheme;
+        return systemThemeQuery.matches ? "dark" : "light";
+      };
+
+      const applyTheme = (theme: string) => {
+        root.dataset.theme = theme;
+        root.style.colorScheme = theme;
+
+        if (!toggle) return;
+
+        const isDark = theme === "dark";
+        toggle.setAttribute("aria-pressed", String(isDark));
+        toggle.setAttribute("aria-label", isDark ? "라이트 테마로 전환" : "다크 테마로 전환");
+      };
+
+      applyTheme(resolveTheme());
+
+      toggle?.addEventListener("click", () => {
+        const nextTheme = root.dataset.theme === "dark" ? "light" : "dark";
+        setStoredTheme(nextTheme);
+        applyTheme(nextTheme);
+      });
+
+      systemThemeQuery.addEventListener("change", () => {
+        const storedTheme = getStoredTheme();
+        if (storedTheme !== "dark" && storedTheme !== "light") {
+          applyTheme(resolveTheme());
+        }
+      });
+    </script>
+  </body>
+</html>
