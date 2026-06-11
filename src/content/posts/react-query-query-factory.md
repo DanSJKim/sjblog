@@ -233,6 +233,8 @@ Query Factory가 항상 필요한 건 아니다. 작은 화면에서 query가 �
 
 React Query를 더 잘 쓰는 문제라기보다, 서버 상태의 이름과 경계를 어디에 둘 것인가에 가까운 문제였다. 지금은 queryKey와 queryFn을 한곳에 두고, 그 정의를 여러 API가 같이 쓰게 만드는 쪽이 더 납득된다.
 
+query 쪽을 이렇게 정리하고 나니 mutation에서도 비슷한 질문이 남았다. 요청 정의는 밖으로 꺼낼 수 있겠는데, 성공 이후의 캐시 갱신이나 toast 같은 반응은 어디에 둬야 할까. 그 부분은 다음 글에서 따로 정리했다.
+
 ## 참고한 문서
 
 - [TanStack Query v5 Query Options](https://tanstack.com/query/v5/docs/framework/react/guides/query-options)

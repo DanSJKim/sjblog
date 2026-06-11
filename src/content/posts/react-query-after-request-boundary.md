@@ -9,7 +9,7 @@ tags:
 commentsUrl: "https://github.com/DanSJKim/sjblog-comments/discussions/3"
 ---
 
-Query Factory를 정리하고 나니 다음 질문이 남았다.
+Query Factory를 정리한 뒤에는 후속 처리 쪽이 신경 쓰였다.
 
 `queryKey`와 `queryFn`을 한곳에 두는 건 알겠는데, 그 다음 처리는 어디에 두는 게 좋을까?
 
