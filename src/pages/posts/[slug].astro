@@ -43,7 +43,7 @@ const articleJsonLd = {
   publishedTime={post.data.pubDate}
   jsonLd={articleJsonLd}
 >
-  <article class="mx-auto max-w-2xl">
+  <article class="mx-auto max-w-[52rem]">
     <header class="mb-12">
       <p class="meta-text mb-3 text-sm">
         <time datetime={post.data.pubDate.toISOString()}>
@@ -73,7 +73,7 @@ const articleJsonLd = {
       }
     </header>
 
-    <div class="post-content liquid-reading-panel px-4 py-5 sm:px-8 sm:py-9">
+    <div class="post-content liquid-reading-panel px-4 py-5 sm:px-8 sm:py-9 lg:px-10">
       <Content />
     </div>
 
