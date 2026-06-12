@@ -22,11 +22,11 @@ const useUsersQuery = (params: UserSearchParams) => {
 }
 ```
 
-컴포넌트에서는 `useUsersQuery(params)`만 호출하면 되니 얼핏 보기에는 깔끔하다. 나도 한동안 이 방식이 자연스럽다고 생각했다. 그런데 query가 늘어나고, 캐시를 직접 만져야 하는 상황이 많아지면서 같은 불편함을 반복해서 만났다.
+컴포넌트에서는 `useUsersQuery(params)`만 호출하면 되니 얼핏 보기에는 깔끔하다. 나도 한동안 이 방식이 자연스럽다고 생각했다. 하지만 query가 늘고 캐시를 직접 만지는 코드가 생기면서 같은 문제가 반복됐다.
 
-처음에 신경 쓰였던 건 `queryFn`보다 `queryKey`였다. 훅 안에서 key를 만들다 보니 `invalidateQueries`나 `setQueryData`를 쓸 때 같은 key를 바깥에서 다시 만들어야 했다. 문자열을 손으로 맞추는 코드가 늘어나면, 결국 어느 한쪽이 어긋날 것 같았다.
+처음에 신경 쓰였던 건 `queryFn`보다 `queryKey`였다. 훅 안에서 key를 만들다 보니 `invalidateQueries`나 `setQueryData`를 쓸 때 같은 key를 바깥에서 다시 만들어야 했다. 문자열을 손으로 맞추는 코드가 늘수록 어느 한쪽이 어긋날 가능성도 커졌다.
 
-그래서 먼저 찾아본 건 Query Key Factory 패턴이었다. 나중에 다시 읽어보니 TkDodo의 "Effective React Query Keys" 글에서도 feature마다 query key factory를 두는 방식을 제안하고 있었다. key를 한곳에서 만들고, 목록/상세/검색처럼 계층을 나누면 캐시 조작이 훨씬 안전해질 것 같았다.
+그래서 먼저 찾아본 건 Query Key Factory 패턴이었다. 나중에 다시 읽어보니 TkDodo의 "Effective React Query Keys" 글에서도 feature마다 query key factory를 두는 방식을 제안하고 있었다. key를 한곳에서 만들고, 목록/상세/검색처럼 계층을 나누면 캐시 조작을 더 안전하게 만들 수 있어 보였다.
 
 ```ts
 const userKeys = {
@@ -37,11 +37,11 @@ const userKeys = {
 }
 ```
 
-그런데 key만 밖으로 빼고 나니 다른 질문이 남았다. `queryKey`는 재사용할 수 있게 됐지만, 그 key로 어떤 데이터를 가져오는지까지는 여전히 훅 안에 숨어 있었다. `useQuery`에서는 쓸 수 있지만 `prefetchQuery`, `fetchQuery`, `getQueryData`, `setQueryData`, `invalidateQueries` 같은 API와 연결하려면 query definition을 다시 조립해야 했다.
+그런데 key만 밖으로 빼고 나니 다음 문제가 보였다. `queryKey`는 재사용할 수 있게 됐지만, 그 key로 어떤 데이터를 가져오는지는 여전히 훅 안에 숨어 있었다. `useQuery`에서는 쓸 수 있지만 `prefetchQuery`, `fetchQuery`, `getQueryData`, `setQueryData`, `invalidateQueries` 같은 API와 연결하려면 query definition을 다시 조립해야 했다.
 
 이 지점에서 TkDodo의 "The Query Options API"를 다시 읽었다. 그는 예전에 제안했던 Query Key Factory를 돌아보면서, `queryKey`와 `queryFn`을 분리한 것이 실수였다고 쓴다. key는 queryFn의 의존성을 표현하는데, 정작 key는 factory에 있고 queryFn은 커스텀 훅 안에 떨어져 있으면 둘 사이의 관계가 코드에 잘 남지 않는다.
 
-그래서 이 글에서는 TkDodo가 Query Options API 글에서 보여준 것처럼, key helper와 `queryOptions`로 만든 query definition을 같은 객체 안에 두는 방식으로 정리했다.
+그래서 TkDodo가 Query Options API 글에서 보여준 것처럼, key helper와 `queryOptions`로 만든 query definition을 같은 객체 안에 두는 쪽으로 방향을 틀었다.
 
 그때부터 질문이 바뀌었다.
 
@@ -61,11 +61,11 @@ const usersQuery = queryOptions({
 })
 ```
 
-런타임에서 특별한 일을 많이 하는 함수는 아니다. 입력한 option 객체를 거의 그대로 돌려준다. 이 helper는 TypeScript를 쓸 때 더 쓸모 있다.
+런타임에서 큰 동작을 하는 함수는 아니다. 입력한 option 객체를 거의 그대로 돌려준다. 이 helper는 TypeScript를 쓸 때 더 쓸모 있다.
 
-먼저 option 객체를 따로 빼도 타입 검사가 유지된다. 그냥 객체로 빼면 `staleTime`을 `stallTime`처럼 잘못 적어도 놓치는 경우가 생길 수 있다. `queryOptions`로 감싸면 query option을 만드는 시점에 타입 검사가 걸린다.
+먼저 option 객체를 따로 빼도 타입 검사가 유지된다. 그냥 객체로 빼면 `staleTime`을 `stallTime`처럼 잘못 적어도 놓칠 수 있다. `queryOptions`로 감싸면 query option을 만드는 시점에 타입 검사가 걸린다.
 
-더 크게 느껴지는 건 `queryKey`와 `queryFn`의 반환 타입이 함께 따라온다는 점이다. queryClient API를 쓰면 이 차이가 더 분명하다.
+더 중요한 점은 `queryKey`와 `queryFn`의 반환 타입이 함께 따라온다는 것이다. queryClient API를 쓰면 이 차이가 더 잘 드러난다.
 
 ```ts
 const userDetailQuery = (id: number) =>
@@ -82,7 +82,7 @@ const data = queryClient.getQueryData(userDetailQuery(1).queryKey)
 
 ## Query Factory로 묶기
 
-그래서 커스텀 훅 안에 query 정의를 숨기기보다, TkDodo가 제안한 Query Factory처럼 key와 queryFn을 같이 묶는 쪽이 더 낫다고 판단했다.
+그래서 커스텀 훅 안에 query 정의를 숨기기보다, TkDodo가 제안한 Query Factory처럼 key와 queryFn을 같이 묶는 쪽이 더 맞다고 봤다.
 
 ```ts
 import { keepPreviousData, queryOptions, skipToken } from "@tanstack/react-query"
@@ -143,9 +143,9 @@ const UserListPage = () => {
 }
 ```
 
-커스텀 훅을 완전히 금지하자는 이야기는 아니다. 화면에서 반복되는 view 전용 가공이 있다면 얇은 훅을 둘 수 있다. 다만 query의 원본 정의는 훅 안에 숨기지 않는 쪽이 더 나았다.
+커스텀 훅을 완전히 금지하자는 이야기는 아니다. 화면에서 반복되는 view 전용 가공이 있다면 얇은 훅을 둘 수 있다. 다만 query의 원본 정의는 훅 안에 숨기지 않는 쪽이 관리하기 쉬웠다.
 
-`select`도 마찬가지다. 여러 화면이 공유해야 하는 변환이면 factory에서 다룰 수 있지만, 특정 화면에서만 필요한 가공이라면 호출부에 두는 편이 더 분명했다.
+`select`도 마찬가지다. 여러 화면이 공유해야 하는 변환이면 factory에서 다룰 수 있지만, 특정 화면에서만 필요한 가공이라면 호출부에 두는 편이 경계가 더 선명했다.
 
 ```tsx
 const { data: options = [] } = useQuery({
@@ -158,7 +158,7 @@ const { data: options = [] } = useQuery({
 })
 ```
 
-이렇게 두면 query definition은 서버에서 받은 데이터에 맞춰 남고, 화면이 원하는 모양은 화면 가까이에 남는다.
+이렇게 두면 query definition은 서버에서 받은 데이터에 맞춰 유지되고, 화면이 원하는 모양은 화면 가까이에 둔다.
 
 ## 캐시 조작이 단순해진다
 
@@ -222,7 +222,7 @@ const { data: selectedUser } = useQuery(userQueries.detail(selectedUserId))
 
 Query Factory가 항상 필요한 건 아니다. 작은 화면에서 query가 한두 개뿐이고 캐시 조작도 없다면 커스텀 훅 하나로도 충분하다.
 
-다음 조건이 겹치면 factory로 빼는 편이 좋아진다.
+다음 조건이 겹치면 factory 분리를 검토할 만하다.
 
 - 같은 query definition을 `useQuery`, `useSuspenseQuery`, `prefetchQuery`, `getQueryData` 등에서 재사용한다.
 - 목록/상세/검색처럼 key 계층이 생긴다.
@@ -231,7 +231,7 @@ Query Factory가 항상 필요한 건 아니다. 작은 화면에서 query가 �
 
 처음에는 커스텀 훅이 코드를 숨겨줘서 편했다. 하지만 시간이 지나니 내가 숨긴 건 코드가 아니라 query의 정의와 캐시 정책이었다. Query Factory는 그걸 다시 꺼내는 방식이었다.
 
-React Query를 더 잘 쓰는 문제라기보다, 서버 상태의 이름과 경계를 어디에 둘 것인가의 문제였다. 지금은 queryKey와 queryFn을 한곳에 두고, 그 정의를 여러 API가 같이 쓰게 만드는 쪽이 더 납득된다.
+React Query를 더 잘 쓰는 문제라기보다, 서버 상태의 이름과 경계를 어디에 둘 것인가의 문제였다. 지금은 queryKey와 queryFn을 한곳에 두고, 그 정의를 여러 API가 같이 쓰게 만드는 쪽이 더 설득력 있다고 본다.
 
 query 쪽을 이렇게 정리하고 나니 mutation에서도 비슷한 질문이 남았다. 요청 정의는 밖으로 꺼낼 수 있겠는데, 성공 이후의 캐시 갱신이나 toast 같은 반응은 어디에 둬야 할까. 이 질문은 다음 글에서 따로 정리했다.
 

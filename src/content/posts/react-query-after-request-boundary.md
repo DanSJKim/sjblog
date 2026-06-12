@@ -13,7 +13,7 @@ Query Factory로 `queryKey`와 `queryFn`을 컴포넌트 밖으로 꺼냈다. �
 
 그런데 막상 코드를 보다 보니 다른 것들이 남았다. `select`, `invalidateQueries`, toast, modal close 같은 코드들이다.
 
-겉으로는 서로 달라 보인다. `select`는 query 쪽 코드이고, toast나 modal close는 mutation의 `onSuccess` 주변에서 나온다. 그래도 한 번 더 들여다보면 질문은 비슷하다.
+겉으로는 서로 달라 보인다. `select`는 query 쪽 코드이고, toast나 modal close는 mutation의 `onSuccess` 주변에 붙는다. 그래도 한 번 더 들여다보면 질문은 비슷하다.
 
 이 코드는 서버 상태의 규칙에 가까운가, 아니면 지금 화면의 반응에 가까운가.
 
@@ -70,7 +70,7 @@ options: (params: UserSearchParams) =>
   })
 ```
 
-하지만 이렇게 두면 query definition이 화면의 모양까지 알게 된다. 이 변환을 여러 화면에서 공통으로 쓴다면 괜찮다. 반대로 특정 화면에서만 필요한 모양이라면 호출부에 남기는 편이 더 명확했다.
+하지만 이렇게 두면 query definition이 화면의 모양까지 떠안게 된다. 이 변환을 여러 화면에서 공통으로 쓴다면 괜찮다. 반대로 특정 화면에서만 필요한 모양이라면 호출부에 남기는 편이 읽기 쉬웠다.
 
 그래서 query 쪽은 이렇게 생각한다.
 
@@ -97,7 +97,7 @@ queryClient.setQueryData(
 )
 ```
 
-이런 코드는 key를 손으로 다시 만들기 시작하면 금방 불안해진다. `["users", "list"]`를 여기저기 적어두면 어느 순간 목록 key 구조를 바꿨을 때 같이 고쳐야 할 곳이 생긴다.
+이런 코드는 key를 손으로 다시 만들기 시작하면 금방 불안해진다. `["users", "list"]`를 여기저기 적어두면 목록 key 구조를 바꿀 때 수정 지점이 늘어난다.
 
 그래서 query 이후의 캐시 처리는 factory가 만든 key를 쓰는 쪽이 낫다. 캐시를 어떻게 갱신할지는 호출부에서 결정하더라도, 어떤 key를 대상으로 할지는 factory에서 가져오는 편이 안전했다.
 
@@ -128,7 +128,7 @@ const useUpdateUserMutation = () => {
 }
 ```
 
-처음에는 편하다. 시간이 지나면 이 훅이 요청 정의, 캐시 정합성, UI 반응을 모두 알게 된다.
+처음에는 편하다. 시간이 지나면 이 훅이 요청 정의, 캐시 정합성, UI 반응을 모두 떠안는다.
 
 v5에는 `mutationOptions`가 있다.
 
@@ -144,7 +144,7 @@ export const userMutations = {
 
 `mutationOptions`에 대한 글은 `useMutation`이나 optimistic update 글에 비해 많지 않았다. 공식 문서도 짧은 편이다. 그래서 처음에는 이 helper의 역할이 애매했다.
 
-써보면서 느낀 역할은 단순했다. `mutationOptions`는 mutation 훅을 대체하는 게 아니라, mutation의 요청 정의를 컴포넌트 밖으로 꺼내는 도구로 보는 게 맞았다.
+써보면서 느낀 역할은 단순했다. `mutationOptions`는 mutation 훅을 대체한다기보다, mutation의 요청 정의를 컴포넌트 밖으로 꺼내는 도구에 가까웠다.
 
 ## invalidate와 toast는 같은 onSuccess가 아니다
 
@@ -181,7 +181,7 @@ const handleSubmit = (values: UpdateUserVariables) => {
 }
 ```
 
-같은 `updateUser` mutation을 다른 화면에서 쓴다면 toast 문구나 이동 경로는 달라질 수 있다. 그래서 화면마다 달라지는 반응은 `mutate` 호출부에 남기는 편이 자연스러웠다.
+같은 `updateUser` mutation을 다른 화면에서 쓴다면 toast 문구나 이동 경로는 달라질 수 있다. 그래서 화면마다 달라지는 반응은 `mutate` 호출부에 남길 때 흐름이 더 잘 읽혔다.
 
 이렇게 놓고 보면 역할이 꽤 또렷해진다.
 
@@ -208,7 +208,7 @@ const useUpdateUserMutation = () => {
 }
 ```
 
-다만 이 훅에는 UI 반응을 넣지 않으려고 한다. toast, modal close, navigation, form reset이 들어가기 시작하면 훅이 화면의 사정을 알게 된다.
+다만 이 훅에는 UI 반응을 넣지 않으려고 한다. toast, modal close, navigation, form reset이 들어가기 시작하면 화면의 사정이 훅으로 밀려 들어온다.
 
 내가 쓰는 커스텀 mutation 훅은 요청 정의와 항상 필요한 캐시 정합성까지만 감싸는 얇은 층에 가깝다.
 
@@ -241,9 +241,9 @@ query와 mutation을 같이 놓고 보니 결은 비슷했다.
 
 처음에는 `queryOptions`와 `mutationOptions`를 같은 종류의 helper로 이해하려고 했다. 실제로 써보니 둘의 무게중심은 조금 달랐다.
 
-query에서는 같은 query definition을 여러 읽기 API에서 재사용하는 일이 중요했다. mutation에서는 요청 정의보다 그 이후의 경계를 나누는 일이 더 크게 느껴졌다.
+query에서는 같은 query definition을 여러 읽기 API에서 재사용하는 일이 중요했다. mutation에서는 요청 정의보다 그 이후의 경계를 나누는 일이 더 크게 다가왔다.
 
-React Query 코드를 손본다는 건 훅을 줄이는 문제만은 아니었다. 서버 상태의 원형, 캐시 정합성, 화면 반응을 어느 경계에서 끊어낼지 정하는 문제에 가까웠다.
+React Query 코드를 손본다는 건 훅을 줄이는 문제만은 아니었다. 서버 상태의 원형, 캐시 정합성, 화면 반응을 어느 경계에서 끊어낼지 정하는 일에 가까웠다.
 
 ## 참고한 문서
 
