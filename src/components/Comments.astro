@@ -4,25 +4,95 @@ type Props = {
 };
 
 const { commentsUrl } = Astro.props;
+const discussionNumber = commentsUrl?.match(/\/discussions\/(\d+)/)?.[1];
 ---
 
 {
-  commentsUrl && (
-    <section class="comments-panel mt-10" aria-labelledby="comments-title">
-      <div>
-        <h2 id="comments-title" class="text-xl font-semibold">Comments</h2>
-        <p class="page-copy mt-2 leading-7">
-          의견이나 질문은 GitHub Discussion에 남겨주세요. GitHub 계정으로 로그인하면 댓글을 작성할 수 있습니다.
-        </p>
-      </div>
-      <a
-        class="comments-link"
-        href={commentsUrl}
-        target="_blank"
-        rel="noreferrer"
-      >
-        GitHub에서 댓글 보기
-      </a>
-    </section>
-  )
+  commentsUrl &&
+    (discussionNumber ? (
+      <section class="comments-panel comments-panel--embedded mt-10" aria-labelledby="comments-title">
+        <div class="comments-panel__header">
+          <div>
+            <h2 id="comments-title" class="text-xl font-semibold">Comments</h2>
+            <p class="page-copy mt-2 leading-7">GitHub 계정으로 의견이나 질문을 남길 수 있습니다.</p>
+          </div>
+          <a
+            class="comments-link"
+            href={commentsUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub에서 보기
+          </a>
+        </div>
+        <div class="giscus-wrap">
+          <script
+            src="https://giscus.app/client.js"
+            data-repo="DanSJKim/sjblog-comments"
+            data-repo-id="R_kgDOS3l5ow"
+            data-category="General"
+            data-category-id="DIC_kwDOS3l5o84C-9Fi"
+            data-mapping="number"
+            data-term={discussionNumber}
+            data-strict="1"
+            data-reactions-enabled="1"
+            data-emit-metadata="0"
+            data-input-position="top"
+            data-theme="preferred_color_scheme"
+            data-lang="ko"
+            data-loading="lazy"
+            crossorigin="anonymous"
+            async
+          ></script>
+        </div>
+        <script is:inline>
+          (() => {
+            const getGiscusTheme = () =>
+              document.documentElement.dataset.theme === "dark" ? "transparent_dark" : "light";
+
+            const setGiscusTheme = () => {
+              const iframe = document.querySelector("iframe.giscus-frame");
+              if (!iframe?.contentWindow) return;
+
+              iframe.contentWindow.postMessage(
+                {
+                  giscus: {
+                    setConfig: {
+                      theme: getGiscusTheme(),
+                    },
+                  },
+                },
+                "https://giscus.app",
+              );
+            };
+
+            const observer = new MutationObserver(setGiscusTheme);
+            observer.observe(document.documentElement, {
+              attributes: true,
+              attributeFilter: ["data-theme"],
+            });
+
+            window.addEventListener("load", setGiscusTheme);
+            window.setTimeout(setGiscusTheme, 800);
+          })();
+        </script>
+      </section>
+    ) : (
+      <section class="comments-panel mt-10" aria-labelledby="comments-title">
+        <div>
+          <h2 id="comments-title" class="text-xl font-semibold">Comments</h2>
+          <p class="page-copy mt-2 leading-7">
+            의견이나 질문은 GitHub Discussion에 남겨주세요. GitHub 계정으로 로그인하면 댓글을 작성할 수 있습니다.
+          </p>
+        </div>
+        <a
+          class="comments-link"
+          href={commentsUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub에서 댓글 보기
+        </a>
+      </section>
+    ))
 }

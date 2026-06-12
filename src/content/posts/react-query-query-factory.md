@@ -39,7 +39,7 @@ const userKeys = {
 
 그런데 key만 밖으로 빼고 나니 다른 질문이 남았다. `queryKey`는 재사용할 수 있게 됐지만, 그 key로 어떤 데이터를 가져오는지까지는 여전히 훅 안에 숨어 있었다. `useQuery`에서는 쓸 수 있지만 `prefetchQuery`, `fetchQuery`, `getQueryData`, `setQueryData`, `invalidateQueries` 같은 API와 연결하려면 query definition을 다시 조립해야 했다.
 
-그러다 TkDodo의 "The Query Options API"를 다시 읽었다. 그는 예전에 제안했던 Query Key Factory를 돌아보면서, `queryKey`와 `queryFn`을 분리한 것이 실수였다고 쓴다. key는 queryFn의 의존성을 표현하는데, 정작 key는 factory에 있고 queryFn은 커스텀 훅 안에 떨어져 있으면 둘 사이의 관계가 코드에 잘 남지 않는다.
+이 지점에서 TkDodo의 "The Query Options API"를 다시 읽었다. 그는 예전에 제안했던 Query Key Factory를 돌아보면서, `queryKey`와 `queryFn`을 분리한 것이 실수였다고 쓴다. key는 queryFn의 의존성을 표현하는데, 정작 key는 factory에 있고 queryFn은 커스텀 훅 안에 떨어져 있으면 둘 사이의 관계가 코드에 잘 남지 않는다.
 
 그래서 이 글에서는 TkDodo가 Query Options API 글에서 보여준 것처럼, key helper와 `queryOptions`로 만든 query definition을 같은 객체 안에 두는 방식으로 정리했다.
 

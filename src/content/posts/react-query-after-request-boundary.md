@@ -128,7 +128,7 @@ const useUpdateUserMutation = () => {
 }
 ```
 
-처음에는 편하다. 그런데 시간이 지나면 이 훅이 요청 정의, 캐시 정합성, UI 반응을 모두 알게 된다.
+처음에는 편하다. 시간이 지나면 이 훅이 요청 정의, 캐시 정합성, UI 반응을 모두 알게 된다.
 
 v5에는 `mutationOptions`가 있다.
 
@@ -239,7 +239,7 @@ query와 mutation을 같이 놓고 보니 결은 비슷했다.
 - 항상 필요한 캐시 정합성 처리는 `useMutation` options나 얇은 커스텀 훅이 맡는다.
 - 특정 사용자 행동에 붙은 반응은 `mutate` callback에서 처리한다.
 
-처음에는 `queryOptions`와 `mutationOptions`를 같은 종류의 helper로 이해하려고 했다. 그런데 실제로는 조금 달랐다.
+처음에는 `queryOptions`와 `mutationOptions`를 같은 종류의 helper로 이해하려고 했다. 실제로 써보니 둘의 무게중심은 조금 달랐다.
 
 query에서는 같은 query definition을 여러 읽기 API에서 재사용하는 일이 중요했다. mutation에서는 요청 정의보다 그 이후의 경계를 나누는 일이 더 크게 느껴졌다.
 
