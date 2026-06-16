@@ -1,6 +1,6 @@
 ---
 title: "React Reconciler가 Stack에서 Fiber로 바뀐 이유"
-description: "렌더링을 중간에 멈췄다 잇는다는 설명이 자료구조 수준에서 안 와닿아, Stack reconciler와 Fiber의 실제 생김새를 뜯어본 기록입니다."
+description: "렌더링을 중간에 멈췄다 잇는다는 설명이 자료구조 수준에서 와닿지 않아, Stack reconciler와 Fiber의 실제 생김새를 뜯어본 기록입니다."
 pubDate: 2026-06-16
 tags:
   - react
@@ -8,7 +8,7 @@ tags:
   - internals
 ---
 
-`useTransition`이나 `useDeferredValue` 설명을 읽다 보면 비슷한 문장이 나온다. "React가 렌더링을 중간에 멈추고, 더 급한 일을 먼저 처리한 다음, 멈춘 지점부터 다시 잇는다." 기능 자체는 써봤는데, "렌더링을 멈췄다 잇는다"가 코드 수준에서 무슨 뜻인지는 안 와닿았다. 함수 호출을 어떻게 중간에 멈춘다는 거지?
+`useTransition`이나 `useDeferredValue` 설명을 읽다 보면 비슷한 문장이 나온다. "React가 렌더링을 중간에 멈추고, 더 급한 일을 먼저 처리한 다음, 멈춘 지점부터 다시 잇는다." 기능 자체는 써봤는데, "렌더링을 멈췄다 잇는다"가 코드 수준에서 무슨 뜻인지는 와닿지 않았다. 함수 호출을 어떻게 중간에 멈춘다는 거지?
 
 거슬러 올라가니 reconciler가 나왔다. React 16에서 reconciler를 Fiber로 다시 썼다는 얘기는 알고 있었지만, 그게 정확히 뭘 바꾼 건지는 모르고 있었다. 멈춤과 재개가 가능해진 지점이 거기라면, Stack 시절엔 왜 안 됐는지부터 봐야 했다.
 
@@ -49,9 +49,9 @@ reconcile(App)
 
 여기서 처음 했던 오해가 풀렸다. "멈췄다 잇는다"가 안 됐던 건 React가 게을러서가 아니라, 작업의 진행 위치가 call stack 안에만 있었기 때문이다. call stack은 우리가 들고 있다가 나중에 꺼내 쓸 수 있는 값이 아니다. 멈추는 순간 사라진다.
 
-## Fiber는 그냥 객체다
+## Fiber Node는 그냥 객체다
 
-그럼 Fiber는 뭘 바꿨나. 이름이 거창해서 한참 들여다봤는데, 실체는 plain JavaScript 객체 하나였다. 컴포넌트(정확히는 작업 단위) 하나마다 Fiber 객체가 하나 붙는다. React 소스의 `FiberNode`를 필요한 부분만 추리면 이렇다.
+그럼 Fiber는 뭘 바꿨나. 용어부터 정리하면, 흔히 "Fiber"라고 뭉뚱그리지만 정확히는 Work Loop·Scheduler·Lane System까지 묶은 걸 Fiber Architecture라고 부른다. 그중 핵심 자료구조가 Fiber Node라는 객체다. 이름이 거창해서 한참 들여다봤는데, 이 자료구조의 실체는 plain JavaScript 객체 하나였다. 작업 단위 하나마다 Fiber Node가 하나 붙는다. React 소스의 `FiberNode`를 필요한 부분만 추리면 이렇다.
 
 ```js
 function FiberNode(tag, pendingProps, key) {
@@ -111,14 +111,17 @@ App
 ```js
 let workInProgress = rootFiber
 
-function workLoop() {
+// concurrent 경로의 work loop
+function workLoopConcurrent() {
   while (workInProgress !== null && !shouldYield()) {
     workInProgress = performUnitOfWork(workInProgress)
   }
 }
 ```
 
-`performUnitOfWork`는 fiber 하나를 처리하고, 다음에 처리할 fiber를 돌려준다. Stack과 갈리는 지점이 `shouldYield()`다. fiber 하나를 끝낼 때마다 "지금 브라우저한테 양보해야 하나?"를 묻는다. 양보해야 하면 루프를 빠져나가 제어를 넘긴다.
+`performUnitOfWork`는 fiber 하나를 처리하고, 다음에 처리할 fiber를 돌려준다. fiber 하나는 내려갈 때 `beginWork`로 한 번, 자식을 다 끝내고 올라올 때 `completeWork`로 한 번 거친다. Stack과 갈리는 지점은 `shouldYield()`다. fiber 하나를 끝낼 때마다 "지금 브라우저한테 양보해야 하나?"를 묻고, 양보해야 하면 루프를 빠져나가 제어를 넘긴다.
+
+한 가지 짚어둘 게 있다. `shouldYield`가 붙은 건 concurrent 경로(`workLoopConcurrent`)뿐이다. 동기 경로인 `workLoopSync`에는 이 질문이 없어서 한 번 시작하면 끝까지 돈다. 그러니 "멈출 수 있다"는 건 구조가 그렇게 깔려 있다는 가능성이고, 실제로 멈추는지는 그 업데이트가 어느 경로로 도느냐에 달렸다. 이 조건은 마지막에 다시 본다.
 
 그렇게 빠져나가도 다음에 어디서부터 다시 시작할지 알 수 있다. 진행 위치가 `workInProgress`라는 변수에 들어 있기 때문이다. 재귀였다면 위치가 call stack에 있어서 멈추는 순간 잃어버렸을 텐데, Fiber는 그 위치를 평범한 변수로 들고 있다. "멈췄다 잇기"의 실체가 결국 이거였다. 진행 상태를 우리가 붙잡을 수 있는 값으로 꺼내둔 것.
 
@@ -130,7 +133,7 @@ function workLoop() {
 
 그렇지는 않다. Fiber는 작업을 두 단계로 나눈다.
 
-- **render(reconcile) phase**: 어떤 fiber가 바뀌었는지 계산하고, 바뀐 곳에 `flags`로 표시를 남긴다. 이 단계는 멈췄다 이을 수 있다. 아직 실제 DOM은 건드리지 않는다.
+- **render(reconcile) phase**: 어떤 fiber가 바뀌었는지 계산하고, 바뀐 곳에 `flags`로 표시를 남긴다. 이 단계는 (concurrent 경로라면) 멈췄다 이을 수 있다. 아직 실제 DOM은 건드리지 않는다.
 - **commit phase**: render 단계에서 표시해둔 변경을 실제 DOM에 한 번에 반영한다. 이 단계는 멈추지 않고 동기로 끝낸다.
 
 화면이 깨져 보이지 않는 건 이 분리 덕분이다. 멈췄다 잇는 건 계산만 하는 render phase고, 사용자에게 보이는 DOM을 바꾸는 commit phase는 쪼개지 않는다. render phase를 중간에 버리고 더 급한 업데이트부터 처리하더라도, 버려지는 건 계산이지 화면이 아니다.
@@ -145,10 +148,12 @@ function workLoop() {
 
 `lanes`도 이 맥락에서 본다. fiber마다 이 업데이트가 얼마나 급한지를 lane으로 표시해두면, 급한 업데이트를 먼저 처리하고 덜 급한 건 미룰 수 있다. `useTransition`으로 감싼 업데이트가 입력에 밀리는 게 이 우선순위 위에서 돌아가는 동작이다. 다만 lane이 실제로 어떻게 비트로 묶이고 비교되는지는 따로 더 파봐야 해서, 이 글에서는 "급한 정도를 fiber에 적어둔다" 정도로 남겨둔다.
 
+앞에서 미뤄둔 조건을 여기서 마저 본다. 이 중단·재개가 항상 켜져 있는 건 아니다. `createRoot`로 만든 concurrent root에서, 그것도 `startTransition`이나 `useTransition`으로 표시한 업데이트일 때 시간 분할이 적용된다. 평범한 동기 업데이트는 concurrent root에서도 한 번에 끝까지 렌더링한다. Fiber는 "멈출 수 있는 구조"를 깔아둔 쪽이고, 실제로 멈추는 건 그 위에서 transition으로 표시한 작업이다.
+
 ## 정리
 
 - Stack reconciler의 "stack"은 별도 자료구조가 아니라 JS의 call stack이다. 트리를 재귀로 내려가니, 한 번 시작하면 다 끝날 때까지 메인 스레드를 놓지 못했다.
-- Fiber는 작업 단위마다 객체를 만들고 `child`/`sibling`/`return` 포인터로 트리를 잇는다. 순회를 반복문으로 돌리고 진행 위치를 `workInProgress` 변수에 담아서, 중간에 멈췄다 이을 수 있다.
+- Fiber는 작업 단위마다 객체(Fiber Node)를 만들고 `child`/`sibling`/`return` 포인터로 트리를 잇는다. 순회를 반복문으로 돌리고 진행 위치를 `workInProgress` 변수에 담아서, 중간에 멈췄다 이을 수 있는 구조다.
 - 멈췄다 이어도 화면이 안 깨지는 건 계산만 하는 render phase와 DOM에 반영하는 commit phase를 나눠뒀기 때문이다.
 - Fiber는 렌더링을 더 빠르게 만드는 게 아니라, 멈추고 우선순위를 줄 수 있게 만든다. concurrent 기능은 그 위에 얹힌다.
 
