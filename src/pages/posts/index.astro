@@ -9,11 +9,13 @@ const posts = (await getCollection("posts")).sort(
 ---
 
 <BaseLayout title="Posts" description="글 목록">
-  <section class="mb-14 pt-2 sm:pt-5">
-    <h1 class="page-title mb-5 text-4xl font-semibold leading-tight sm:text-5xl">
-      Posts
-    </h1>
-  </section>
+  <div class="mx-auto max-w-3xl">
+    <section class="mb-14 pt-2 sm:pt-5">
+      <h1 class="page-title mb-5 text-4xl font-semibold leading-tight sm:text-5xl">
+        Posts
+      </h1>
+    </section>
 
-  <PostList posts={posts} />
+    <PostList posts={posts} />
+  </div>
 </BaseLayout>
