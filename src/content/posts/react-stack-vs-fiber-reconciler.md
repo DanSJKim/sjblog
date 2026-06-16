@@ -51,7 +51,7 @@ reconcile(App)
 
 ## Fiber Node는 그냥 객체다
 
-그럼 Fiber는 뭘 바꿨나. 용어부터 정리하면, 흔히 "Fiber"라고 뭉뚱그리지만 정확히는 Work Loop, Scheduler, Lane System까지 묶은 걸 Fiber Architecture라고 부른다. 그중 핵심 자료구조가 Fiber Node라는 객체다. 이름이 거창해서 한참 들여다봤는데, 이 자료구조의 실체는 plain JavaScript 객체 하나였다. 작업 단위 하나마다 Fiber Node가 하나 붙는다. React 소스의 `FiberNode`를 필요한 부분만 추리면 이렇다.
+그럼 Fiber는 뭘 바꿨나. 용어부터 정리하면, 흔히 "Fiber"라고 뭉뚱그리지만 정확히는 Work Loop, Scheduler, Lane System까지 묶은 걸 Fiber Architecture라고 부른다. 그중 핵심 자료구조가 Fiber Node라는 객체다. 이름이 거창해서 한참 들여다봤는데, 이 자료구조의 실체는 plain JavaScript 객체 하나였다. 달리 보면, 재귀였다면 call stack에 쌓였을 스택 프레임을 React가 객체로 만들어 heap에 둔 것이다. 작업 단위 하나마다 Fiber Node가 하나 붙는다. React 소스의 `FiberNode`를 필요한 부분만 추리면 이렇다.
 
 ```js
 function FiberNode(tag, pendingProps, key) {
@@ -119,7 +119,7 @@ function workLoopConcurrent() {
 }
 ```
 
-`performUnitOfWork`는 fiber 하나를 처리하고, 다음에 처리할 fiber를 돌려준다. fiber 하나는 내려갈 때 `beginWork`로 한 번, 자식을 다 끝내고 올라올 때 `completeWork`로 한 번 거친다. Stack과 갈리는 지점은 `shouldYield()`다. fiber 하나를 끝낼 때마다 "지금 브라우저한테 양보해야 하나?"를 묻고, 양보해야 하면 루프를 빠져나가 제어를 넘긴다.
+`performUnitOfWork`는 fiber 하나를 처리하고, 다음에 처리할 fiber를 돌려준다. fiber 하나는 내려갈 때 `beginWork`로 한 번, 자식을 다 끝내고 올라올 때 `completeWork`로 한 번 거친다. Stack과 갈리는 지점은 `shouldYield()`다. fiber 하나를 끝낼 때마다 "지금 브라우저에 양보해야 하나?"를 묻고, 양보해야 하면 루프를 빠져나가 제어를 넘긴다.
 
 한 가지 짚어둘 게 있다. `shouldYield`가 붙은 건 concurrent 경로(`workLoopConcurrent`)뿐이다. 동기 경로인 `workLoopSync`에는 이 질문이 없어서 한 번 시작하면 끝까지 돈다. 그러니 "멈출 수 있다"는 건 구조가 그렇게 깔려 있다는 가능성이고, 실제로 멈추는지는 그 업데이트가 어느 경로로 도느냐에 달렸다. 이 조건은 마지막에 다시 본다.
 
@@ -142,13 +142,13 @@ function workLoopConcurrent() {
 
 ## 그래서 Fiber가 더 빠른가
 
-여기서 오해하기 쉬운데, Fiber로 바꿨다고 같은 렌더링이 더 빨리 끝나는 건 아니다. 해야 할 계산량은 비슷하다. 오히려 fiber 객체를 만들고 포인터를 잇는 비용이 더 들 수도 있다.
+여기서 오해하기 쉬운데, Fiber로 바꿨다고 같은 트리를 한 번 그리는 비용 자체가 줄어드는 건 아니다. 오히려 fiber 객체를 만들고 포인터를 잇는 비용이 더 들 수도 있다.
 
 바뀐 건 속도가 아니라 "언제 멈출 수 있는가"다. 긴 렌더링을 작은 단위로 쪼개서, 중간중간 입력이나 클릭 같은 급한 일을 먼저 처리하고 돌아올 수 있다. 전체 시간은 비슷해도 입력이 즉시 반응하면 체감상 덜 버벅인다. 처리량보다 체감 응답성을 챙기는 구조인 셈이다.
 
-`lanes`도 같은 맥락이다. fiber마다 이 업데이트가 얼마나 급한지를 lane으로 표시해두면, 급한 업데이트를 먼저 처리하고 덜 급한 건 미룰 수 있다. `useTransition`으로 감싼 업데이트가 입력에 밀리는 게 이 우선순위 위에서 돌아가는 동작이다. 다만 lane이 실제로 어떻게 비트로 묶이고 비교되는지는 따로 더 파봐야 해서, 이 글에서는 "급한 정도를 fiber에 적어둔다" 정도로 남겨둔다.
+그런데 멈출 수만 있어서는 부족하다. 여러 업데이트가 동시에 밀려 있을 때 무엇을 먼저 할지도 정해야 한다. 그 우선순위를 맡는 게 `lanes`다. fiber마다 이 업데이트가 얼마나 급한지를 lane으로 표시해두면, 급한 업데이트를 먼저 처리하고 덜 급한 건 미룰 수 있다. `useTransition`으로 감싼 업데이트가 입력에 밀리는 게 이 우선순위 위에서 돌아가는 동작이다. 다만 lane이 실제로 어떻게 비트로 묶이고 비교되는지는 따로 더 파봐야 해서, 이 글에서는 "급한 정도를 fiber에 적어둔다" 정도로 남겨둔다.
 
-앞에서 미뤄둔 조건을 여기서 마저 본다. 이 중단과 재개가 항상 켜져 있는 건 아니다. `createRoot`로 만든 concurrent root에서, 그것도 `startTransition`이나 `useTransition`으로 표시한 업데이트일 때 시간 분할이 적용된다. 평범한 동기 업데이트는 concurrent root에서도 한 번에 끝까지 렌더링한다. Fiber는 "멈출 수 있는 구조"를 깔아둔 쪽이고, 실제로 멈추는 건 그 위에서 transition으로 표시한 작업이다.
+앞에서 미뤄둔 조건을 여기서 마저 본다. 이 중단과 재개가 항상 켜져 있는 건 아니다. `createRoot`로 concurrent 렌더링을 켜고, 그중 `startTransition`이나 `useTransition`으로 표시한 업데이트일 때만 시간 분할이 적용된다. 평범한 동기 업데이트는 concurrent root에서도 한 번에 끝까지 렌더링한다. Fiber는 "멈출 수 있는 구조"를 깔아둔 쪽이고, 실제로 멈추는 건 그 위에서 transition으로 표시한 작업이다.
 
 ## 정리
 
