@@ -123,6 +123,8 @@ function workLoopConcurrent() {
 
 처음에는 Fiber가 무슨 정교한 스케줄링 알고리즘인 줄 알았는데, 멈춤과 재개에 한정해서 보면 핵심은 "트리를 객체 + 포인터로 펼쳐서, 현재 위치를 변수에 담아둔다"였다.
 
+![Stack Reconciler와 Fiber 비교: Stack Reconciler는 reconcile(App), reconcile(List), reconcile(Item)이 call stack에 쌓여 한 번 시작하면 끝까지 못 멈추고 진행 위치도 스택 안에 있어 멈추면 사라진다. Fiber는 App, Header, List, Item 노드를 workInProgress 변수가 가리켜, 진행 위치가 변수에 남으므로 멈춘 지점부터 다시 이어갈 수 있다.](/posts/react-fiber/stack-vs-fiber.svg)
+
 ## 멈출 수 있는 단계와 없는 단계
 
 여기까지 보고 한 가지가 걸렸다. 렌더링을 중간에 멈추고 나중에 다시 한다면, 화면이 반쯤 그려진 채로 보이는 거 아닌가?
