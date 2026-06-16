@@ -107,17 +107,18 @@ fiber들은 이렇게 연결된다.
 ```js
 let workInProgress = rootFiber
 
-// concurrent 경로의 work loop
+// 이해를 위한 의사코드 (concurrent 경로)
 function workLoopConcurrent() {
   while (workInProgress !== null && !shouldYield()) {
-    workInProgress = performUnitOfWork(workInProgress)
+    performUnitOfWork(workInProgress)
+    // performUnitOfWork 안에서 workInProgress가 다음 fiber로 갱신된다
   }
 }
 ```
 
-`performUnitOfWork`는 fiber 하나를 처리하고, 다음에 처리할 fiber를 돌려준다. 다음 fiber는 앞에서 본 포인터를 따라 정해진다. `child`가 있으면 내려가며 `beginWork`를 하고, 더 내려갈 곳이 없으면 `completeWork` 뒤 `sibling`으로, 그것도 없으면 `return`을 따라 올라간다. Stack과 갈리는 지점은 `shouldYield()`다. fiber 하나를 끝낼 때마다 "지금 브라우저에 양보해야 하나?"를 묻고, 양보해야 하면 루프를 빠져나가 제어를 넘긴다.
+`performUnitOfWork`는 fiber 하나를 처리하고, 그 과정에서 `workInProgress`를 다음 fiber로 옮긴다. 다음 fiber는 앞에서 본 포인터를 따라 정해진다. `child`가 있으면 내려가며 `beginWork`를 하고, 더 내려갈 곳이 없으면 `completeWork` 뒤 `sibling`으로, 그것도 없으면 `return`을 따라 올라간다. Stack과 갈리는 지점은 `shouldYield()`다. fiber 하나를 끝낼 때마다 "지금 브라우저에 양보해야 하나?"를 묻고, 양보해야 하면 루프를 빠져나가 제어를 넘긴다.
 
-한 가지 짚어둘 게 있다. `shouldYield`가 붙은 건 concurrent 경로(`workLoopConcurrent`)뿐이다. 동기 경로인 `workLoopSync`에는 이 질문이 없어서 한 번 시작하면 끝까지 돈다. 그러니 "멈출 수 있다"는 건 구조가 그렇게 깔려 있다는 가능성이고, 실제로 멈추는지는 그 업데이트가 어느 경로로 도느냐에 달렸다. 이 조건은 마지막에 다시 본다.
+한 가지 짚어둘 게 있다. 이렇게 중간에 양보할지 확인하는 건 concurrent 경로뿐이다. 동기 경로인 `workLoopSync`에는 그 확인이 없어서 한 번 시작하면 끝까지 돈다. 그러니 "멈출 수 있다"는 건 구조가 그렇게 깔려 있다는 가능성이고, 실제로 멈추는지는 그 업데이트가 어느 경로로 도느냐에 달렸다. 이 조건은 마지막에 다시 본다.
 
 그렇게 빠져나가도 다음에 어디서부터 다시 시작할지 알 수 있다. 진행 위치가 `workInProgress`라는 변수에 들어 있기 때문이다. 재귀였다면 위치가 call stack에 있어서 멈추는 순간 잃어버렸을 텐데, Fiber는 그 위치를 평범한 변수로 들고 있다. 진행 상태를 붙잡을 수 있는 값으로 꺼내둔 것, 이게 중단과 재개가 가능한 이유다.
 
@@ -146,7 +147,7 @@ function workLoopConcurrent() {
 
 그런데 멈출 수만 있어서는 부족하다. 여러 업데이트가 동시에 밀려 있을 때 무엇을 먼저 할지도 정해야 한다. 그 우선순위를 맡는 게 `lanes`다. fiber마다 이 업데이트가 얼마나 급한지를 lane으로 표시해두면, 급한 업데이트를 먼저 처리하고 덜 급한 건 미룰 수 있다. `useTransition`으로 감싼 업데이트가 입력에 밀리는 게 이 우선순위 위에서 돌아가는 동작이다. 다만 lane이 실제로 어떻게 비트로 묶이고 비교되는지는 따로 더 파봐야 해서, 이 글에서는 "급한 정도를 fiber에 적어둔다" 정도로 남겨둔다.
 
-앞에서 미뤄둔 조건을 여기서 마저 본다. 이 중단과 재개가 항상 켜져 있는 건 아니다. `createRoot`로 concurrent 렌더링을 켜면, 그중 대표적으로 `startTransition`이나 `useTransition`으로 표시한 업데이트가 시간 분할의 대상이 된다. 평범한 동기 업데이트는 같은 root에서도 한 번에 끝까지 렌더링한다. Fiber는 "멈출 수 있는 구조"를 깔아둔 쪽이고, 실제로 멈추는 건 그 위에서 transition으로 표시한 작업이다.
+앞에서 미뤄둔 조건을 여기서 마저 본다. 이 중단과 재개가 항상 켜져 있는 건 아니다. `createRoot`로 concurrent 렌더링을 켜면, 그중 대표적으로 `startTransition`이나 `useTransition`으로 표시한 업데이트가 시간 분할의 대상이 된다. 평범한 동기 업데이트는 같은 root에서도 기본적으로 한 번에 끝까지 렌더링한다. Fiber는 "멈출 수 있는 구조"를 깔아둔 쪽이고, 실제로 멈추는 건 그 위에서 transition으로 표시한 작업이다.
 
 ## 정리
 
