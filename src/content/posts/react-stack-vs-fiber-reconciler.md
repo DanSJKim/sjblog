@@ -1,6 +1,6 @@
 ---
 title: "React Reconciler가 Stack에서 Fiber로 바뀐 이유"
-description: "렌더링을 중간에 중단했다가 재개한다는 설명이 자료구조 수준에서 와닿지 않아, Stack reconciler와 Fiber의 실제 생김새를 뜯어본 기록입니다."
+description: "렌더링을 중간에 중단했다가 재개하는 개념이 자료구조 수준에서 와닿지 않아, Stack reconciler와 Fiber의 실제 생김새를 뜯어본 기록입니다."
 pubDate: 2026-06-16
 tags:
   - react
@@ -12,7 +12,7 @@ tags:
 
 거슬러 올라가니 reconciler가 나왔다. React 16에서 reconciler를 Fiber로 다시 썼다는 얘기는 알고 있었지만, 그게 정확히 뭘 바꾼 건지는 모르고 있었다. 멈춤과 재개가 가능해진 지점이 거기라면, Stack 시절엔 왜 안 됐는지부터 봐야 했다.
 
-## "Stack"이 특별한 자료구조인 줄 알았다
+## Stack Reconciler가 노드를 stack에 쌓는 줄 알았다
 
 처음엔 Stack reconciler라는 이름 때문에, React가 따로 stack 자료구조를 두고 노드를 push/pop 하는 줄 알았다. 코드를 찾아보니 아니었다. 여기서 stack은 그냥 JavaScript의 call stack이다. 옛 reconciler는 트리를 재귀로 내려가며 처리했고, 그 재귀 호출이 쌓이는 곳이 call stack이라 "Stack reconciler"라고 부른 것뿐이었다.
 
