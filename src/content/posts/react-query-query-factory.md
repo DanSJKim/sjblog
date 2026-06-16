@@ -1,6 +1,6 @@
 ---
 title: "React Query v5에서 Query Factory 패턴으로 쿼리 관리하기"
-description: "queryKey를 체계적으로 관리하려다 queryKey와 queryFn을 함께 다루는 Query Factory 패턴까지 살펴본 기록입니다."
+description: "커스텀 훅 안에 숨긴 query 정의와 캐시 정책을 Query Factory로 다시 꺼내본 기록입니다."
 pubDate: 2026-06-11
 tags:
   - react-query
@@ -9,7 +9,7 @@ tags:
 commentsUrl: "https://github.com/DanSJKim/sjblog-comments/discussions/2"
 ---
 
-React Query를 쓰다 보면 처음에는 커스텀 훅을 만들게 된다.
+React Query를 어느 정도 쓰다 보면 커스텀 훅이 오히려 답답해지는 순간이 온다. 처음에는 요청 코드를 감싸두는 정도로 충분해 보인다.
 
 ```ts
 const useUsersQuery = (params: UserSearchParams) => {
@@ -22,7 +22,7 @@ const useUsersQuery = (params: UserSearchParams) => {
 }
 ```
 
-컴포넌트에서는 `useUsersQuery(params)`만 호출하면 되니 얼핏 보기에는 깔끔하다. 나도 한동안 이 방식이 자연스럽다고 생각했다. 하지만 query가 늘고 캐시를 직접 만지는 코드가 생기면서 같은 문제가 반복됐다.
+`useUsersQuery(params)`만 호출하면 컴포넌트는 단순해지고, 요청 코드도 한곳에 모이는 것처럼 보였다. 하지만 query가 늘고 `invalidateQueries`나 `getQueryData`를 쓰기 시작하자 같은 key를 바깥에서 다시 만들고 있었다. 훅 안에 숨겨둔 건 요청 코드만이 아니라 query의 정의와 캐시를 다루는 기준이기도 했다.
 
 처음에 신경 쓰였던 건 `queryFn`보다 `queryKey`였다. 훅 안에서 key를 만들다 보니 `invalidateQueries`나 `setQueryData`를 쓸 때 같은 key를 바깥에서 다시 만들어야 했다. 문자열을 손으로 맞추는 코드가 늘수록 어느 한쪽이 어긋날 가능성도 커졌다.
 
@@ -43,9 +43,7 @@ const userKeys = {
 
 그래서 TkDodo가 Query Options API 글에서 보여준 것처럼, key helper와 `queryOptions`로 만든 query definition을 같은 객체 안에 두는 쪽으로 방향을 틀었다.
 
-그때부터 질문이 바뀌었다.
-
-query key만 체계적으로 관리하면 충분할까, 아니면 query 정의 자체를 밖으로 꺼내야 할까?
+결국 같은 query를 두 군데에서 조립하고 있었다. key만 체계적으로 관리하면 충분한지, 아니면 query 정의 자체를 밖으로 꺼내야 하는지 다시 보게 된 것도 그때였다.
 
 ## queryOptions가 해주는 일
 
@@ -61,11 +59,11 @@ const usersQuery = queryOptions({
 })
 ```
 
-런타임에서 큰 동작을 하는 함수는 아니다. 입력한 option 객체를 거의 그대로 돌려준다. 이 helper는 TypeScript를 쓸 때 더 쓸모 있다.
+런타임에서 특별한 처리를 하는 함수는 아니다. 입력한 option 객체를 거의 그대로 돌려주지만, TypeScript를 쓸 때는 이야기가 조금 달라진다.
 
 먼저 option 객체를 따로 빼도 타입 검사가 유지된다. 그냥 객체로 빼면 `staleTime`을 `stallTime`처럼 잘못 적어도 놓칠 수 있다. `queryOptions`로 감싸면 query option을 만드는 시점에 타입 검사가 걸린다.
 
-더 중요한 점은 `queryKey`와 `queryFn`의 반환 타입이 함께 따라온다는 것이다. queryClient API를 쓰면 이 차이가 더 잘 드러난다.
+더 중요한 점은 `queryKey`와 `queryFn`의 반환 타입이 함께 따라온다는 데 있다. queryClient API를 쓰면 이 차이가 더 잘 드러난다.
 
 ```ts
 const userDetailQuery = (id: number) =>
@@ -124,9 +122,9 @@ export const userQueries = {
 }
 ```
 
-여기서 `all`, `lists`, `details`는 key-only helper다. 실제 요청을 만들지는 않고, 캐시 조작을 할 때 prefix로 쓴다.
+여기서 `all`, `lists`, `details`는 key-only helper다. 실제 요청을 만들지는 않고, 캐시 조작을 할 때 prefix로 쓴다. 반면 `list`, `detail`은 실제 query option을 만든다.
 
-`list`, `detail`은 실제 query option을 만든다. 컴포넌트에서는 이렇게 쓴다.
+컴포넌트에서는 이렇게 쓴다.
 
 ```tsx
 const UserListPage = () => {
@@ -160,7 +158,7 @@ const { data: options = [] } = useQuery({
 
 이렇게 두면 query definition은 서버에서 받은 데이터에 맞춰 유지되고, 화면이 원하는 모양은 화면 가까이에 둔다.
 
-## 캐시 조작이 단순해진다
+## 캐시 조작에서 덜 불안해진 부분
 
 Query Factory를 쓰면서 가장 체감이 컸던 건 캐시 조작이다.
 
@@ -174,7 +172,7 @@ await queryClient.invalidateQueries({
 })
 ```
 
-목록 전체를 무효화할 때는 `lists()`를 쓰고, 특정 상세만 무효화할 때는 `detail(id).queryKey`를 쓴다. key 구조가 factory 안에 모여 있으니 캐시 정책을 읽기 쉽다. key를 손으로 다시 만들 일도 줄어든다.
+목록 전체를 무효화할 때는 `lists()`를 쓰고, 특정 상세만 무효화할 때는 `detail(id).queryKey`를 쓴다. key 구조가 factory 안에 모여 있으면 캐시 정책을 따라가기 쉽고, key를 손으로 다시 만들 일도 줄어든다.
 
 `setQueryData`에서도 같은 장점이 이어진다.
 
@@ -210,7 +208,7 @@ detail: (id: number | null) =>
   })
 ```
 
-이렇게 하면 id가 없을 때 queryFn 자체가 실행되지 않는다. 호출부도 단순해진다.
+이렇게 하면 id가 없을 때 queryFn 자체가 실행되지 않아 호출부도 단순해진다.
 
 ```tsx
 const { data: selectedUser } = useQuery(userQueries.detail(selectedUserId))
@@ -218,7 +216,7 @@ const { data: selectedUser } = useQuery(userQueries.detail(selectedUserId))
 
 `enabled`가 필요 없는 건 아니다. 다만 nullable parameter 때문에 query를 막는 경우라면 `skipToken`이 타입과 실행 조건을 한곳에서 드러내준다.
 
-## 언제 이 패턴이 맞을까
+## 어떤 경우에 꺼낼 만했나
 
 Query Factory가 항상 필요한 건 아니다. 작은 화면에서 query가 한두 개뿐이고 캐시 조작도 없다면 커스텀 훅 하나로도 충분하다.
 
@@ -229,9 +227,9 @@ Query Factory가 항상 필요한 건 아니다. 작은 화면에서 query가 �
 - nullable id detail query가 많다.
 - 화면 전용 select와 서버 데이터 원형을 분리하고 싶다.
 
-처음에는 커스텀 훅이 코드를 숨겨줘서 편했다. 하지만 시간이 지나니 내가 숨긴 건 코드가 아니라 query의 정의와 캐시 정책이었다. Query Factory는 그걸 다시 꺼내는 방식이었다.
+처음에는 커스텀 훅이 코드를 숨겨줘서 편했다. 시간이 지나고 보니 그 안에는 요청 함수뿐 아니라 key 구조와 캐시를 다루는 기준까지 같이 들어가 있었다. Query Factory를 쓰면서 그 기준을 다시 밖으로 꺼낸 셈이다.
 
-React Query를 더 잘 쓰는 문제라기보다, 서버 상태의 이름과 경계를 어디에 둘 것인가의 문제였다. 지금은 queryKey와 queryFn을 한곳에 두고, 그 정의를 여러 API가 같이 쓰게 만드는 쪽이 더 설득력 있다고 본다.
+이건 React Query를 더 잘 쓰는 요령이라기보다 서버 상태의 이름과 경계를 어디에 둘지 정하는 문제에 가까웠다. 지금은 queryKey와 queryFn을 한곳에 두고, 그 정의를 여러 API가 같이 쓰게 만드는 쪽이 더 납득된다.
 
 query 쪽을 이렇게 정리하고 나니 mutation에서도 비슷한 질문이 남았다. 요청 정의는 밖으로 꺼낼 수 있겠는데, 성공 이후의 캐시 갱신이나 toast 같은 반응은 어디에 둬야 할까. 이 질문은 다음 글에서 따로 정리했다.
 
