@@ -138,7 +138,7 @@ function workLoopConcurrent() {
 
 `alternate` 필드가 여기서 같이 등장한다. React는 지금 화면을 그리고 있는 fiber 트리(current)와, 새로 계산 중인 트리(workInProgress)를 따로 둔다. 둘은 `alternate`로 서로를 가리킨다. 계산은 workInProgress 트리에서 하고, commit이 끝나면 그 트리가 current가 된다. 작업 중인 화면과 보이는 화면을 분리해두는 double buffering인데, render phase를 중간에 버려도 보이는 화면이 멀쩡한 것도 이 구조와 맞물린다.
 
-## 그래서 Fiber가 더 빠른가
+## Fiber가 해결한 문제는 속도였을까
 
 여기서 오해하기 쉬운데, Fiber로 바꿨다고 같은 트리를 한 번 그리는 비용 자체가 줄어드는 건 아니다. 오히려 fiber 객체를 만들고 포인터를 잇는 비용이 더 들 수도 있다.
 
