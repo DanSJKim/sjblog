@@ -96,13 +96,9 @@ Stack 시절엔 없던 게 `return` / `child` / `sibling`이다. 트리의 부�
 
 fiber들은 이렇게 연결된다.
 
-```
-App
- └child→ Header ─sibling→ List
-                           └child→ Item ─sibling→ Item
-```
+![Fiber 트리 포인터 구조: App의 child가 Header, Header의 sibling이 List, List의 child가 Item, Item의 sibling이 다음 Item을 가리킨다. child는 첫 자식으로 내려가는 파란 화살표, sibling은 다음 형제로 가는 청록 화살표, return은 부모로 돌아가는 점선 화살표다. 방문 순서는 App, Header, List, Item, Item 순.](/posts/react-fiber/fiber-tree.svg)
 
-각 fiber는 `child`를 따라 첫 자식으로 내려가고, `sibling`을 따라 옆 형제로 넘어가고, 더 갈 곳이 없으면 `return`을 따라 부모로 돌아온다. 재귀에서 "함수가 끝나 호출자로 돌아가는" 동작을 `return` 포인터가 대신한다.
+각 fiber는 `child`를 따라 첫 자식으로 내려가고, `sibling`을 따라 옆 형제로 넘어가고, 더 갈 곳이 없으면 `return`을 따라 부모로 돌아온다. 재귀에서 "함수가 끝나 호출자로 돌아가는" 동작을 `return` 포인터가 대신한다. children 배열만 들고 있었다면 트리를 재귀로 타고 내려가야 하지만, 이렇게 세 포인터로 펼쳐두면 재귀 없이 반복문으로 트리를 DFS 순회할 수 있다.
 
 ## 중단과 재개가 가능한 이유
 
@@ -119,7 +115,7 @@ function workLoopConcurrent() {
 }
 ```
 
-`performUnitOfWork`는 fiber 하나를 처리하고, 다음에 처리할 fiber를 돌려준다. fiber 하나는 내려갈 때 `beginWork`로 한 번, 자식을 다 끝내고 올라올 때 `completeWork`로 한 번 거친다. Stack과 갈리는 지점은 `shouldYield()`다. fiber 하나를 끝낼 때마다 "지금 브라우저에 양보해야 하나?"를 묻고, 양보해야 하면 루프를 빠져나가 제어를 넘긴다.
+`performUnitOfWork`는 fiber 하나를 처리하고, 다음에 처리할 fiber를 돌려준다. 다음 fiber는 앞에서 본 포인터를 따라 정해진다. `child`가 있으면 내려가며 `beginWork`를 하고, 더 내려갈 곳이 없으면 `completeWork` 뒤 `sibling`으로, 그것도 없으면 `return`을 따라 올라간다. Stack과 갈리는 지점은 `shouldYield()`다. fiber 하나를 끝낼 때마다 "지금 브라우저에 양보해야 하나?"를 묻고, 양보해야 하면 루프를 빠져나가 제어를 넘긴다.
 
 한 가지 짚어둘 게 있다. `shouldYield`가 붙은 건 concurrent 경로(`workLoopConcurrent`)뿐이다. 동기 경로인 `workLoopSync`에는 이 질문이 없어서 한 번 시작하면 끝까지 돈다. 그러니 "멈출 수 있다"는 건 구조가 그렇게 깔려 있다는 가능성이고, 실제로 멈추는지는 그 업데이트가 어느 경로로 도느냐에 달렸다. 이 조건은 마지막에 다시 본다.
 

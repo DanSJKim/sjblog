@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 432" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" role="img" aria-label="Fiber 트리의 포인터 구조와 순회 순서">
+  <defs>
+    <marker id="ah-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0066cc"/>
+    </marker>
+    <marker id="ah-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0d9488"/>
+    </marker>
+    <marker id="ah-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#a1a1aa"/>
+    </marker>
+  </defs>
+
+  <!-- return pointers (dashed, to parent) -->
+  <g stroke="#a1a1aa" stroke-width="1.5" stroke-dasharray="4 3" fill="none" marker-end="url(#ah-gray)">
+    <path d="M152,148 L152,74"/>
+    <path d="M350,148 C330,112 232,92 174,75"/>
+    <path d="M394,274 L394,198"/>
+    <path d="M560,274 C540,236 462,216 408,199"/>
+  </g>
+
+  <!-- child pointers (solid blue) -->
+  <g stroke="#0066cc" stroke-width="2" fill="none" marker-end="url(#ah-blue)">
+    <path d="M128,72 L128,147"/>
+    <path d="M370,196 L370,273"/>
+  </g>
+
+  <!-- sibling pointers (solid teal) -->
+  <g stroke="#0d9488" stroke-width="2" fill="none" marker-end="url(#ah-teal)">
+    <path d="M204,173 L316,173"/>
+    <path d="M446,299 L536,299"/>
+  </g>
+
+  <!-- nodes -->
+  <g>
+    <rect x="78" y="26" width="124" height="46" rx="9" fill="#ffffff" stroke="#d4d4d8"/>
+    <rect x="78" y="150" width="124" height="46" rx="9" fill="#ffffff" stroke="#d4d4d8"/>
+    <rect x="320" y="150" width="124" height="46" rx="9" fill="#ffffff" stroke="#d4d4d8"/>
+    <rect x="320" y="276" width="124" height="46" rx="9" fill="#ffffff" stroke="#d4d4d8"/>
+    <rect x="540" y="276" width="124" height="46" rx="9" fill="#ffffff" stroke="#d4d4d8"/>
+  </g>
+  <g fill="#1d1d1f" font-size="16" text-anchor="middle">
+    <text x="140" y="55">App</text>
+    <text x="140" y="179">Header</text>
+    <text x="382" y="179">List</text>
+    <text x="382" y="305">Item</text>
+    <text x="602" y="305">Item</text>
+  </g>
+
+  <!-- visit-order badges -->
+  <g>
+    <circle cx="86" cy="34" r="11" fill="#0066cc"/><text x="86" y="38" fill="#fff" font-size="12" text-anchor="middle">1</text>
+    <circle cx="86" cy="158" r="11" fill="#0066cc"/><text x="86" y="162" fill="#fff" font-size="12" text-anchor="middle">2</text>
+    <circle cx="328" cy="158" r="11" fill="#0066cc"/><text x="328" y="162" fill="#fff" font-size="12" text-anchor="middle">3</text>
+    <circle cx="328" cy="284" r="11" fill="#0066cc"/><text x="328" y="288" fill="#fff" font-size="12" text-anchor="middle">4</text>
+    <circle cx="548" cy="284" r="11" fill="#0066cc"/><text x="548" y="288" fill="#fff" font-size="12" text-anchor="middle">5</text>
+  </g>
+
+  <!-- legend -->
+  <g font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#3f3f46">
+    <line x1="80" y1="366" x2="110" y2="366" stroke="#0066cc" stroke-width="2" marker-end="url(#ah-blue)"/>
+    <text x="118" y="370">child — 첫 자식으로</text>
+    <line x1="80" y1="390" x2="110" y2="390" stroke="#0d9488" stroke-width="2" marker-end="url(#ah-teal)"/>
+    <text x="118" y="394">sibling — 다음 형제로</text>
+    <line x1="80" y1="414" x2="110" y2="414" stroke="#a1a1aa" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah-gray)"/>
+    <text x="118" y="418">return — 부모로 (점선)</text>
+    <text x="320" y="370" fill="#71717a">①–⑤ : 내려갈 때(beginWork) 기준 방문 순서</text>
+    <text x="320" y="394" fill="#71717a">child → sibling → return 순으로 재귀 없이 DFS 순회</text>
+  </g>
+</svg>
