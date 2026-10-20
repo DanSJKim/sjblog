@@ -9,13 +9,13 @@ tags:
 commentsUrl: "https://github.com/DanSJKim/sjblog-comments/discussions/3"
 ---
 
-Query Factory로 `queryKey`와 `queryFn`을 컴포넌트 밖으로 꺼내고 나면 React Query 코드가 꽤 정리된 것처럼 보인다. 나도 처음엔 그 정도면 충분하다고 생각했지만, 실제 화면 코드는 거기서 끝나지 않았다. `select`, `invalidateQueries`, toast, modal close 같은 코드들이 남았다.
+Query Factory로 `queryKey`와 `queryFn`을 컴포넌트 밖으로 꺼내고 나면 React Query 코드가 꽤 정리된 것처럼 보인다. 나도 처음엔 그 정도면 충분하다고 생각했지만 실제 화면 코드는 거기서 끝나지 않았다. `select`, `invalidateQueries`, toast, modal close 같은 코드들이 남았다.
 
-겉으로는 서로 달라 보인다. `select`는 query 쪽 코드이고, toast나 modal close는 mutation의 `onSuccess` 주변에 붙는다. 그래도 한 번 더 들여다보면 질문은 비슷하다.
+겉으로는 서로 달라 보인다. `select`는 query 쪽 코드이고 toast나 modal close는 mutation의 `onSuccess` 주변에 붙는다. 그래도 한 번 더 들여다보면 질문은 비슷하다.
 
 이 코드는 서버 상태의 규칙에 가까운가, 아니면 지금 화면의 반응에 가까운가.
 
-내 기준은 대략 세 갈래다. 서버 데이터의 원형과 요청 정의는 컴포넌트 밖으로 꺼내고, 캐시 정합성처럼 항상 필요한 일은 공통으로 처리하되, 화면마다 달라지는 데이터 가공과 UI 반응은 호출부 가까이에 남긴다.
+내 기준은 대략 세 갈래다. 서버 데이터의 원형과 요청 정의는 컴포넌트 밖으로 꺼내고 캐시 정합성처럼 항상 필요한 일은 공통으로 처리하되 화면마다 달라지는 데이터 가공과 UI 반응은 호출부 가까이에 남긴다.
 
 그 기준을 query와 mutation 양쪽에 대입해봤다.
 
@@ -76,7 +76,7 @@ options: (params: UserSearchParams) =>
 
 여기서 봐야 할 건 “이 데이터가 서버 상태의 일부인가, 아니면 화면이 잠깐 원하는 모양인가”였다.
 
-이 생각은 mutation을 볼 때도 이어졌다. 다만 query가 "가져온 데이터를 어떤 모양으로 볼 것인가"를 묻는다면, mutation은 "바꾼 뒤 무엇을 항상 맞춰야 하고, 무엇은 화면마다 달라지는가"를 묻게 된다.
+이 생각은 mutation을 볼 때도 이어졌다. 다만 query가 "가져온 데이터를 어떤 모양으로 볼 것인가"를 묻는다면 mutation은 "바꾼 뒤 무엇을 항상 맞춰야 하고 무엇은 화면마다 달라지는가"를 묻게 된다.
 
 ## query의 캐시 조작은 key 구조와 붙어 있어야 한다
 
@@ -124,7 +124,7 @@ const useUpdateUserMutation = () => {
 }
 ```
 
-처음에는 편하지만, 시간이 지나면 이 훅이 요청 정의, 캐시 정합성, UI 반응을 모두 떠안는다.
+처음에는 편하지만 시간이 지나면 이 훅이 요청 정의, 캐시 정합성, UI 반응을 모두 떠안는다.
 
 v5에는 `mutationOptions`가 있다.
 
@@ -138,7 +138,7 @@ export const userMutations = {
 }
 ```
 
-`mutationOptions`에 대한 글은 `useMutation`이나 optimistic update 글에 비해 많지 않았고, 공식 문서도 짧은 편이라 처음에는 이 helper의 역할이 애매했다.
+`mutationOptions`에 대한 글은 `useMutation`이나 optimistic update 글에 비해 많지 않았고 공식 문서도 짧은 편이라 처음에는 이 helper의 역할이 애매했다.
 
 써보면서 느낀 역할은 단순했다. `mutationOptions`는 mutation 훅을 대체한다기보다, mutation의 요청 정의를 컴포넌트 밖으로 꺼내는 도구에 가까웠다.
 
@@ -210,7 +210,7 @@ const useUpdateUserMutation = () => {
 
 ## 지금은 이렇게 보고 있다
 
-query와 mutation을 따로 보려고 했지만, 막상 나눠보니 기준은 비슷했다.
+query와 mutation을 따로 보려고 했지만 막상 나눠보니 기준은 비슷했다.
 
 - 서버 데이터의 원형과 요청 정의는 컴포넌트 밖으로 뺀다.
 - 화면마다 달라지는 데이터 가공과 UI 반응은 호출부 가까이에 남긴다.
