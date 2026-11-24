@@ -96,7 +96,7 @@ Stack 시절엔 없던 게 `return` / `child` / `sibling`이다. 트리의 부�
 
 fiber들은 이렇게 연결된다.
 
-![Fiber 트리 포인터 구조: App의 child가 Header, Header의 sibling이 List, List의 child가 Item, Item의 sibling이 다음 Item을 가리킨다. child는 첫 자식으로 내려가는 파란 화살표, sibling은 다음 형제로 가는 청록 화살표, return은 부모로 돌아가는 점선 화살표다. 방문 순서는 App, Header, List, Item, Item 순.](/posts/react-fiber/fiber-tree.svg)
+![Fiber 트리 포인터 구조: App의 child가 Header, Header의 sibling이 List, List의 child가 Item, Item의 sibling이 다음 Item을 가리킨다. child는 첫 자식으로 내려가는 파란 화살표, sibling은 다음 형제로 가는 청록 화살표, return은 부모로 돌아가는 점선 화살표다. 방문 순서는 App, Header, List, Item, Item 순.](/sjblog/posts/react-fiber/fiber-tree.svg)
 
 각 fiber는 `child`를 따라 첫 자식으로 내려가고, `sibling`을 따라 옆 형제로 넘어가고, 더 갈 곳이 없으면 `return`을 따라 부모로 돌아온다. 재귀에서 "함수가 끝나 호출자로 돌아가는" 동작을 `return` 포인터가 대신한다. children 배열만 들고 있었다면 트리를 재귀로 타고 내려가야 하지만, 이렇게 세 포인터로 펼쳐두면 재귀 없이 반복문으로 트리를 DFS 순회할 수 있다.
 
@@ -124,7 +124,7 @@ function workLoopConcurrent() {
 
 처음에는 Fiber가 무슨 정교한 스케줄링 알고리즘인 줄 알았는데, 멈춤과 재개에 한정해서 보면 핵심은 "트리를 객체 + 포인터로 펼쳐서, 현재 위치를 변수에 담아둔다"였다.
 
-![Stack Reconciler와 Fiber 비교: Stack Reconciler는 reconcile(App), reconcile(List), reconcile(Item)이 call stack에 쌓여 한 번 시작하면 끝까지 못 멈추고 진행 위치도 스택 안에 있어 멈추면 사라진다. Fiber는 App, Header, List, Item 노드를 workInProgress 변수가 가리켜, 진행 위치가 변수에 남으므로 멈춘 지점부터 다시 이어갈 수 있다.](/posts/react-fiber/stack-vs-fiber.svg)
+![Stack Reconciler와 Fiber 비교: Stack Reconciler는 reconcile(App), reconcile(List), reconcile(Item)이 call stack에 쌓여 한 번 시작하면 끝까지 못 멈추고 진행 위치도 스택 안에 있어 멈추면 사라진다. Fiber는 App, Header, List, Item 노드를 workInProgress 변수가 가리켜, 진행 위치가 변수에 남으므로 멈춘 지점부터 다시 이어갈 수 있다.](/sjblog/posts/react-fiber/stack-vs-fiber.svg)
 
 ## 멈출 수 있는 단계와 없는 단계
 

@@ -19,16 +19,17 @@ const {
   publishedTime,
   jsonLd,
 } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const pageTitle = title === "Daniel's Posts" ? title : `${title} | Daniel's Posts`;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
-const imageUrl = new URL(image, Astro.site);
+const imageUrl = new URL(`${base}${image}`, Astro.site);
 const structuredData =
   jsonLd ??
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "Daniel's Posts",
-    url: new URL("/", Astro.site).toString(),
+    url: new URL(`${base}/`, Astro.site).toString(),
     inLanguage: "ko-KR",
   };
 ---
@@ -41,9 +42,9 @@ const structuredData =
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <link rel="canonical" href={canonicalUrl} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
-    <link rel="alternate" type="application/rss+xml" title="Daniel's Posts RSS" href="/rss.xml" />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <link rel="icon" href={`${base}/favicon.ico`} />
+    <link rel="alternate" type="application/rss+xml" title="Daniel's Posts RSS" href={`${base}/rss.xml`} />
     <meta property="og:site_name" content="Daniel's Posts" />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
@@ -90,10 +91,10 @@ const structuredData =
         class="glass-nav flex items-center justify-between gap-4 px-4 py-3.5"
         aria-label="Primary navigation"
       >
-        <a class="site-title font-semibold" href="/">Daniel's Posts</a>
+        <a class="site-title font-semibold" href={`${base}/`}>Daniel's Posts</a>
         <div class="flex items-center gap-1">
-          <a class="glass-link" href="/posts">Posts</a>
-          <a class="glass-link" href="/about">About</a>
+          <a class="glass-link" href={`${base}/posts`}>Posts</a>
+          <a class="glass-link" href={`${base}/about`}>About</a>
           <button
             class="theme-toggle"
             type="button"

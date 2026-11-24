@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://sjblog-two.vercel.app/sitemap-index.xml
+Sitemap: https://dansjkim.github.io/sjblog/sitemap-index.xml

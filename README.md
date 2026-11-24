@@ -49,4 +49,4 @@ git commit -m "Add post"
 git push
 ```
 
-Vercel이 GitHub 저장소와 연결되어 있으면 `main` 브랜치에 push할 때 운영 사이트가 자동으로 다시 배포됩니다.
+`main` 브랜치에 push하면 GitHub Actions(`.github/workflows/deploy.yml`)가 사이트를 빌드해 GitHub Pages(<https://dansjkim.github.io/sjblog/>)에 배포합니다.
