@@ -9,7 +9,7 @@ tags:
 commentsUrl: "https://github.com/DanSJKim/sjblog-comments/discussions/3"
 ---
 
-Query Factory로 `queryKey`와 `queryFn`을 컴포넌트 밖으로 꺼내고 나면 React Query 코드가 꽤 정리된 것처럼 보인다. 나도 처음엔 그 정도면 충분하다고 생각했지만 실제 화면 코드는 거기서 끝나지 않았다. `select`, `invalidateQueries`, toast, modal close 같은 코드들이 남았다.
+Query Factory로 `queryKey`와 `queryFn`을 컴포넌트 밖으로 꺼내고 나면 React Query 코드가 꽤 정리된 것처럼 보인다. 나도 처음에는 그 정도면 충분하다고 생각했지만 실제 화면 코드는 거기서 끝나지 않았다. `select`, `invalidateQueries`, toast, modal close 같은 코드들이 남았다.
 
 `select`는 query 쪽 코드이고 toast나 modal close는 mutation의 `onSuccess` 주변에 붙는다. 나는 이 코드들을 서버 상태의 규칙과 지금 화면의 반응으로 구분해 배치하려고 했다.
 
@@ -196,7 +196,7 @@ const useUpdateUserMutation = () => {
 
 다만 이 훅에는 UI 반응을 넣지 않으려고 한다. toast, modal close, navigation, form reset까지 훅에서 처리하면 화면마다 달라지는 처리까지 훅에 포함된다.
 
-커스텀 mutation 훅에는 요청 정의와 항상 필요한 캐시 정합성 처리만 포함하려고 한다. 화면의 행동은 호출부에서 처리하려고 한다.
+커스텀 mutation 훅에는 요청 정의와 항상 필요한 캐시 정합성 처리만 포함하고 화면의 행동은 호출부에서 처리하려고 한다.
 
 ## 지금은 이렇게 보고 있다
 
