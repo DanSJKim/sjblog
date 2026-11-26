@@ -12,4 +12,15 @@ const posts = defineCollection({
   }),
 });
 
-export const collections = { posts };
+// 읽은 글: 외부 글 링크 하나에 내 메모(본문)를 붙인다.
+const reading = defineCollection({
+  loader: glob({ base: "./src/content/reading", pattern: "**/*.{md,mdx}" }),
+  schema: z.object({
+    title: z.string(),
+    url: z.string().url(),
+    pubDate: z.coerce.date(),
+    tags: z.array(z.string()).default([]),
+  }),
+});
+
+export const collections = { posts, reading };

@@ -1,0 +1,47 @@
+---
+import { getCollection, render } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const entries = await Promise.all(
+  (await getCollection("reading"))
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+    .map(async (entry) => ({ entry, Content: (await render(entry)).Content })),
+);
+---
+
+<BaseLayout title="Reading" description="읽은 글 목록">
+  <div class="mx-auto max-w-3xl">
+    <section class="mb-14 pt-2 sm:pt-5">
+      <h1 class="page-title mb-5 text-4xl font-semibold leading-tight sm:text-5xl">
+        Reading
+      </h1>
+    </section>
+
+    <section class="grid gap-4" aria-label="읽은 글 목록">
+      {
+        entries.map(({ entry, Content }) => (
+          <article class="liquid-card">
+            <div class="relative z-10 px-5 py-5 sm:px-7 sm:py-6">
+              <h2 class="post-card-title text-xl font-semibold leading-snug">
+                <a href={entry.data.url}>{entry.data.title}</a>
+              </h2>
+              <p class="meta-text mt-2 text-sm">
+                {new URL(entry.data.url).hostname} ·{" "}
+                <time datetime={entry.data.pubDate.toISOString()}>
+                  {entry.data.pubDate.toLocaleDateString("ko-KR", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </time>
+              </p>
+              <div class="post-content mt-4">
+                <Content />
+              </div>
+            </div>
+          </article>
+        ))
+      }
+    </section>
+  </div>
+</BaseLayout>

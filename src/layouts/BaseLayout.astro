@@ -1,5 +1,6 @@
 ---
 import { Moon, Sun } from "@lucide/astro";
+import { getCollection } from "astro:content";
 import "../styles/global.css";
 
 type Props = {
@@ -20,6 +21,8 @@ const {
   jsonLd,
 } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+// 기록이 하나도 없으면 빈 페이지로 안내하지 않는다.
+const hasReading = (await getCollection("reading")).length > 0;
 const pageTitle = title === "Daniel's Posts" ? title : `${title} | Daniel's Posts`;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
 const imageUrl = new URL(`${base}${image}`, Astro.site);
@@ -94,6 +97,7 @@ const structuredData =
         <a class="site-title font-semibold" href={`${base}/`}>Daniel's Posts</a>
         <div class="flex items-center gap-1">
           <a class="glass-link" href={`${base}/posts`}>Posts</a>
+          {hasReading && <a class="glass-link" href={`${base}/reading`}>Reading</a>}
           <a class="glass-link" href={`${base}/about`}>About</a>
           <button
             class="theme-toggle"
